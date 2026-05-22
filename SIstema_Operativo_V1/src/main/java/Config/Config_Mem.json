@@ -1,0 +1,6 @@
+{
+    "memoria": 512,
+    "almacenamiento": 512,
+    "memoria_Virtual": 64,
+    "cant_CPU": 1
+}
