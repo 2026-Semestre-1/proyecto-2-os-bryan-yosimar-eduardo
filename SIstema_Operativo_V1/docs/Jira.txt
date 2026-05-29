@@ -1,0 +1,17 @@
+Memoria:
+    > Paginación:
+    > Particionamiento Fijo (Cada particion igual):
+    > Particionamiento Fijo (Cada particion diferente):
+    > Particionamiento Dinámico (Se usa solo Best Fit):
+    > Buddy System:
+
+
+Planificación:
+    > FCFS: Eduardo.
+    > SRT: Eduardo.
+    > SJF: Eduardo.
+    > RR: Yosimar.
+    > HRRN: Eduardo.
+    > SRR: Yosimar.
+    > Lottery: Yosimar.
+    > Prioridad: Eduardo.
