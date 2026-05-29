@@ -1,15 +1,7 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-package Modelo;
+package model;
 
 import java.time.LocalTime;
 
-/**
- *
- * @author edurg
- */
 public class BCP {
 
     private int PID;
@@ -36,43 +28,13 @@ public class BCP {
     private int[] Pila;
     private String nombre_Programa;
     private int espacio_Total_Programa;
-
-    // Manejo del momento de creacion y finalizacion.
     private LocalTime momento_creacion;
     private LocalTime momento_finalizacion;
 
-    /**
-     * Funcion: Constructor de la clase BCP.
-     * Descripcion: Crea un nuevo BCP con los datos proporcionados por parametros.
-     * 
-     * @param pPID
-     * @param pEstado
-     * @param pPrioridad
-     * @param pMem_Init
-     * @param pMem_End
-     * @param pPC
-     * @param pIR
-     * @param pAC
-     * @param pAX
-     * @param pBX
-     * @param pCX
-     * @param pDX
-     * @param pIO_STATUS
-     * @param pCPU_Asignada
-     * @param pTiempo_Llegada
-     * @param pTiempo_Inicio
-     * @param pTiempo_Finalizacion
-     * @param pTiempo_Ejecucion
-     * @param pProximo_Proceso
-     * @param pPila
-     */
     public BCP(int pPID, String pEstado, String pPrioridad, String pMem_Init, String pMem_End, String pPC, String pIR,
-            String pAC,
-            String pAX, String pBX, String pCX, String pDX, String pAH, String pAL, String pIO_STATUS,
-            String pCPU_Asignada,
-            String pTiempo_Llegada,
-            String pTiempo_Inicio, String pTiempo_Finalizacion, String pTiempo_Ejecucion, String pProximo_Proceso,
-            int[] pPila) {
+            String pAC, String pAX, String pBX, String pCX, String pDX, String pAH, String pAL, String pIO_STATUS,
+            String pCPU_Asignada, String pTiempo_Llegada, String pTiempo_Inicio, String pTiempo_Finalizacion,
+            String pTiempo_Ejecucion, String pProximo_Proceso, int[] pPila) {
         this.PID = pPID;
         this.Estado = pEstado;
         this.Prioridad = pPrioridad;
@@ -97,8 +59,6 @@ public class BCP {
         this.Pila = pPila;
     }
 
-    // Crear una nueva BCP en blanco, para que la pueda hagarrar la memoria
-    // y asignarlo los valores correspondientes cuando lo ocupe.
     public BCP(int pPID, String pPrioridad, String pCPU_Asignada, String pTiempo_Llegada, String pTiempo_Estimado,
             String pNombre_Programa, int pEspacio_Total_Programa) {
         this.PID = pPID;

@@ -1,25 +1,25 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-package Controlador.Utils;
+package util;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import Modelo.Instruccion;
+import model.Instruccion;
 
-/**
- *
- * @author edurg
- */
 public class Separar_Instrucciones {
 
     public static List<String> separar_Instrucciones(String pLinea) {
 
         String linea = pLinea.trim();
 
+        System.out.println("[DEBUG PARSER] Intentando separar la instrucción: '" + linea + "'");
+
         if (linea.isEmpty()) {
+            System.out.println("[DEBUG PARSER] Línea vacía — ¿se omitió correctamente en la carga?");
+            return null;
+        }
+
+        if (linea.startsWith(";")) {
+            System.out.println("[DEBUG PARSER] Línea identificada como comentario — ¿se omitió correctamente?");
             return null;
         }
 
@@ -27,17 +27,12 @@ public class Separar_Instrucciones {
 
         List<String> lista = new ArrayList<>();
 
-        // Expresión regular: captura tokens entre comillas o separados por espacios
         java.util.regex.Matcher m = java.util.regex.Pattern
                 .compile("\"[^\"]*\"|\\S+")
                 .matcher(linea);
 
         while (m.find()) {
             String token = m.group();
-            // Quitar comillas si quieres guardar solo el contenido
-            // if (token.startsWith("\"") && token.endsWith("\"")) {
-            // token = token.substring(1, token.length() - 1);
-            // }
             lista.add(token);
         }
 
@@ -59,5 +54,4 @@ public class Separar_Instrucciones {
             System.out.println("Operando 2: " + lista.get(3));
         }
     }
-
 }

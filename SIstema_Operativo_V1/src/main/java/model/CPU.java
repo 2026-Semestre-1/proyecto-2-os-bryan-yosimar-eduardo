@@ -1,25 +1,14 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-package Modelo;
+package model;
 
 import java.util.List;
 
-import Controlador.Controlador_Memoria;
-import Controlador.Utils.Separar_Instrucciones;
+import kernel.GestorMemoria;
+import util.Separar_Instrucciones;
 
-/**
- *
- * @author edurg
- */
 public class CPU {
 
     private int tiempo_CPU = 0;
-
     private int numero_CPU;
-
-    // Definir los registros en el CPU.
     private int PC;
     private String IR;
     private int AC;
@@ -29,43 +18,19 @@ public class CPU {
     private String DX;
     private String AH;
     private String AL;
-
     private Memoria memoria_Principal;
-
-    private Controlador_Memoria controlador_Memoria;
-
+    private GestorMemoria controlador_Memoria;
     private int PID_Proceso_Actual = 0;
-
-    // Bandera para los casos de comparaciones.
-
-    // ### Seccion de variables para las flags que pueda levantar el programa. ###
-
-    // -> Parte de comparaciones.
     private int flag_CMP;
-
-    // -> Parte de IO | Para saber cuando un archivo fue abierto.
     private int IO_STATUS;
-
     private String ruta_Archivo;
-
-    // -> Finalizacion de procesos.
     private boolean proceso_Finalizado = false;
-
-    // -> Parte de errores.
-    // Bandera para cuando se encuntran errores en el codigo.
     private boolean error_Encontrado = false;
-
-    // Texto del error encontrado.
     private String descripcion_Error = "";
-
-    // -> Parte de impreseion en pantalla.
-
     private boolean imprimir_Pantalla = false;
-
-    // -> Parte de input
     private boolean leer_Teclado = false;
 
-    public CPU(int pNumero_CPU, Memoria pMemoria_Principal, Controlador_Memoria pControlador_Memoria) {
+    public CPU(int pNumero_CPU, Memoria pMemoria_Principal, GestorMemoria pControlador_Memoria) {
         this.tiempo_CPU = 0;
         this.numero_CPU = pNumero_CPU;
         this.memoria_Principal = pMemoria_Principal;
@@ -89,7 +54,6 @@ public class CPU {
         return proceso_Finalizado;
     }
 
-    // ###### Seccion para la parte de los registros ######
     public void setPC(int nuevaPC) {
         this.PC = nuevaPC;
     }
@@ -166,7 +130,6 @@ public class CPU {
         this.AL = nuevaAL;
     }
 
-    // ###### Seccion para la parte del estado de los archvios######
     public int getIO_STATUS() {
         return this.IO_STATUS;
     }
@@ -175,7 +138,6 @@ public class CPU {
         this.IO_STATUS = nuevaIO_STATUS;
     }
 
-    // ###### Seccion para la parte de los flags de comparacion ######
     public int getFlag_CMP() {
         return this.flag_CMP;
     }
@@ -184,7 +146,6 @@ public class CPU {
         this.flag_CMP = nuevaFlag_CMP;
     }
 
-    // ####### Seccion para la parte del PID del proceso actual. ######
     public int getPID_Proceso_Actual() {
         return PID_Proceso_Actual;
     }
@@ -193,7 +154,6 @@ public class CPU {
         this.PID_Proceso_Actual = PID_Proceso_Actual;
     }
 
-    // ###### Seccion para las parte de los errores ######
     public boolean isError_Encontrado() {
         return error_Encontrado;
     }
@@ -210,7 +170,6 @@ public class CPU {
         this.error_Encontrado = error_Encontrado;
     }
 
-    // ###### Seccion para la parte de la impresora ######
     public boolean isImprimir_Pantalla() {
         return imprimir_Pantalla;
     }
@@ -219,7 +178,6 @@ public class CPU {
         this.imprimir_Pantalla = imprimir_Pantalla;
     }
 
-    // ###### Seccion para la parte de la lectura del teclado ######
     public boolean isLeer_Teclado() {
         return leer_Teclado;
     }
@@ -236,212 +194,119 @@ public class CPU {
         this.proceso_Finalizado = proceso_Finalizado;
     }
 
-    /**
-     * Ejecuta la instruccion apuntada por PC.
-     * Devuelve true si se ejecuto una instruccion (o false si no habia
-     * instruccion). Indica si se pudo ejecutar la instruccion o no.
-     */
     public boolean ejecutar_Siguiente_Instruccion() {
-        // Leer instruccion desde memoria en la posicion PC
+        System.out.println("[DEBUG CPU] Leyendo línea en PC = " + PC);
         String instruccion = leer_Memoria(PC);
+        System.out.println("[DEBUG CPU] Contenido crudo obtenido: '" + instruccion + "'");
         if (instruccion == null || instruccion.trim().isEmpty()) {
-            // No hay instrucción en PC
             return false;
         }
-
-        // Guardar en IR y avanzar PC por defecto (al siguiente slot)
         IR = instruccion.trim();
-        // Se asume que se
-        // int siguientePC = PC + 1;
-
-        // Parseo basico: opcode y operandos
-
         List<String> instr = Separar_Instrucciones.separar_Instrucciones(IR);
-
         String opcode = instr.get(0);
         String operando1 = null;
-        String operando2 = null; // Este puedo ser un valor o un registro o nada
+        String operando2 = null;
         String operando3 = null;
-
         if (instr.size() == 2) {
             operando1 = instr.get(1);
         }
-        // Aqui comprobamos si hay alguna elemento como segun operando,
-        // que podria ser una numero o un registro.
         if (instr.size() == 3) {
             operando1 = instr.get(1);
             operando2 = instr.get(2);
         }
-        // Aqui comprobamos si hay alguna elemento como tercer operando,
-        // que podria ser una numero o un registro.
         if (instr.size() == 4) {
             operando1 = instr.get(1);
             operando2 = instr.get(2);
             operando3 = instr.get(3);
-
         }
-
-        // Despachador principal
+        System.out.println("[DEBUG EXECUTE] Evaluando Opcode: '" + opcode + "' con args: '" + operando1 + "', '"
+                + operando2 + "', '" + operando3 + "'");
         switch (opcode.toUpperCase()) {
             case "LOAD":
-                // LOAD AX -> cargar valor de memoria o registro al AC
-                // Soporta: LOAD AX (cargar AX en AC) o LOAD <direccion> (cargar valor en AC)
                 ejecutar_LOAD(operando1);
                 this.PC++;
                 break;
-
             case "STORE":
-                // STORE BX -> almacenar AC en registro BX o en memoria
                 ejecutar_STORE(operando1);
                 this.PC++;
                 break;
-
             case "MOV":
-                // MOV dest, src -> dest puede ser registro, src registro o valor inmediato
                 ejecutar_MOV(operando1, operando2);
                 this.PC++;
                 break;
-
             case "ADD":
-                // ADD BX -> AC = AC + BX
                 ejecutar_ADD(operando1);
                 this.PC++;
                 break;
-
             case "SUB":
                 ejecutar_SUB(operando1);
                 this.PC++;
                 break;
-
             case "INC":
-                // INC or INC AX
                 ejecutar_INC(operando1);
                 this.PC++;
                 break;
-
             case "DEC":
                 ejecutar_DEC(operando1);
                 this.PC++;
                 break;
-
             case "SWAP":
-                // SWAP AX, BX
                 ejecutar_SWAP(operando1, operando2);
                 this.PC++;
                 break;
-
             case "INT":
-                // INT 20H, INT 10H, INT 09H, INT 21H
                 ejecutar_INT(operando1);
                 this.PC++;
                 break;
-
             case "JMP":
-                // JMP [+/-Desplazamiento]
-                ejecutar_JMP(operando1); // siguientePC =
+                ejecutar_JMP(operando1);
                 break;
-
             case "CMP":
-                // CMP Reg1, Reg2
                 ejecutar_CMP(operando1, operando2);
                 this.PC++;
                 break;
-
             case "JE":
-                // JE offset
-                ejecutar_JE(operando1); // siguientePC =
+                ejecutar_JE(operando1);
                 break;
-
             case "JNE":
-                ejecutar_JNE(operando1); // siguientePC =
+                ejecutar_JNE(operando1);
                 break;
-
             case "PARAM":
-                // PARAM v1, v2, .. vN -> push parámetros a pila (máx 3)
-
                 ejecutar_PARAM(operando1, operando2, operando3);
                 this.PC++;
                 break;
-
             case "PUSH":
                 ejecutar_PUSH(operando1);
                 this.PC++;
                 break;
-
             case "POP":
                 ejecutar_POP(operando1);
                 this.PC++;
                 break;
-
             default:
-                // Instruccion no reconocida
                 System.out.println("Instruccion desconocida: " + IR);
                 break;
         }
-
-        // Actualizar PC al siguiente (salvo que la instrucción haya cambiado PC)
-        // this.PC = siguientePC;
-
-        // Incrementar tiempo CPU por instrucción ejecutada
-        // incrementar_Tiempo_CPU();
         mostrar_Datos_Registros();
-
         return true;
     }
 
-    // ######## Seccion para las validacion
-
-    /**
-     * Funcion: ejecutarLOAD
-     * 
-     * Descripcion: Carga el valor de un registro en el acumulador AC.
-     * 
-     * @param operandos (String): registro cuyo valor se cargara en el AC.
-     */
     private void ejecutar_LOAD(String operandos) {
-        // Simulacion de un tiempo de espera.
         set_Espera(2);
         System.out.println("CPU -> Ejecutando LOAD con operando: " + operandos);
         if (isRegister(operandos)) {
             System.out.println("CPU -> El operando es un registro");
-            // AC = AX;
             Integer val = get_Valor_Registros(operandos);
-
-            // Siempre que se tenga que manejar un error, vamos a poner en TRUE la bandera
-            // error_Encontrado y meter el texto en la variable de descripcion_Error.
-            // En cada ciclo del CPU se debera de comprobar el estado de la bandera.
-            // Cuando se detecte un error, se detendra la ejecucion del proceso actual
-            // y se pasara al siguiente.
             if (val == null) {
-                // Activar la bandera de error y meter el texto en la variable de error.
                 this.error_Encontrado = true;
                 this.descripcion_Error = "Error: No se pudo obtener el valor del registro " + operandos;
                 return;
             }
             AC = val;
         }
-        // } else if (isRegister(operandos)) {
-        // Integer val = getRegisterValue(operandos);
-        // if (val == null) {
-        // // Activar la bandera de error y meter el texto en la variable de error.
-        // this.error_Encontrado = true;
-        // this.descripcion_Error = "Error: No se pudo obtener el valor del registro " +
-        // operandos;
-        // return;
-        // }
-        // AC = val;
-        // }
     }
 
-    /**
-     * Funcion: ejecutar_STORE
-     * 
-     * Descripcion: Almacena el valor del acumulador AC en un registro.
-     * 
-     * @param pOperando1 (String): registro cuyo valor se almacenara en el AC.
-     */
     private void ejecutar_STORE(String pOperando1) {
-        // Simulacion de un tiempo de espera.
         set_Espera(2);
         System.out.println("CPU -> Ejecutando STORE con operando: " + pOperando1);
         if (isRegister(pOperando1)) {
@@ -450,32 +315,12 @@ public class CPU {
         }
     }
 
-    /**
-     * Funcion: ejecutar_MOV
-     * 
-     * Descripcion: Mueve el valor de un registro a otro registro.
-     * 
-     * @param pOperando1 (String): registro destino.
-     * @param pOperando2 (String): registro o valor numerico fuente.
-     */
     private void ejecutar_MOV(String pOperando1, String pOperando2) {
-        // Simulacion de un tiempo de espera.
         set_Espera(1);
-        // formato: dest, src
-        // String[] parts = operandos.split(",");
-        // if (parts.length != 2)
-        // return;
-        // String dest = parts[0].trim();
-        // String src = parts[1].trim();
-
         System.out.println("CPU -> Ejecutando MOV con operando: " + pOperando1 + ", " + pOperando2);
         if (isRegister(pOperando2)) {
             System.out.println("CPU -> El operando 2 es un registro");
-
             System.out.println("CPU -> El operando 1 es otro registro");
-
-            // Procesarlo de manera diferente para cuando es AL, AH o AX.
-
             if (pOperando1.toUpperCase().contains("AL")) {
                 System.out.println("CPU -> El operando 1 es AL");
                 this.AL = get_Valor_Registros_String(pOperando2);
@@ -489,277 +334,132 @@ public class CPU {
                 this.DX = get_Valor_Registros_String(pOperando2);
                 return;
             } else {
-                // Caso en el que el operando 2 sea un registro.
                 int val = get_Valor_Registros(pOperando2);
-                // if (isRegister(pOperando1)) {
                 set_Valor_Registros(pOperando1, val);
-
             }
-
         } else {
-            // Caso en el que el operando 2 sea un numero.
             System.out.println("CPU -> El operando 2 es un numero");
-
-            // Estos registros podrian haceptar algo que no sea un numero.
             if (pOperando1.toUpperCase().contains("AH")) {
                 System.out.println("CPU -> El operando 1 es AH");
                 this.AH = pOperando2;
                 return;
-
             } else if (pOperando1.toUpperCase().contains("AL")) {
                 System.out.println("CPU -> El operando 1 es AL");
                 this.AL = pOperando2;
                 return;
-
             } else if (pOperando1.toUpperCase().contains("DX")) {
                 System.out.println("CPU -> El operando 1 es DX");
                 this.DX = pOperando2;
                 return;
             } else {
-
-                // Los demas registros si aceptan solo numeros.
                 try {
                     int val2 = Integer.parseInt(pOperando2);
                     System.out.println("CPU -> El valor 2 es: " + val2);
                     set_Valor_Registros(pOperando1, val2);
-
                 } catch (NumberFormatException e) {
-
-                    // Activar la bandera de error y meter el texto en la variable de error.
                     this.error_Encontrado = true;
                     this.descripcion_Error = "Error: Movimiento (MOV) invalido entre " + pOperando1 + " y "
                             + pOperando2;
-
-                    System.out.println("MOV: fuente inválida: " + pOperando2);
                 }
             }
-
         }
     }
 
-    /**
-     * Funcion: ejecutar_ADD
-     * 
-     * Descripcion: Suma el valor de un registro al acumulador AC.
-     * 
-     * @param operandos (String): registro cuyo valor se sumara al acumulador AC.
-     */
     private void ejecutar_ADD(String operandos) {
-
-        // Simulacion de un tiempo de espera.
         set_Espera(3);
-
-        // Comprobase si es un registro, no se ocupa, se supone que ya se validad al
-        // cargar el programa.
-        // if (isRegister(operandos)) {
         if (operandos.toUpperCase().equals("AC")) {
-
-            // Levantar la bandera de error, ya que el operando no puede ser el acumulador.
             this.error_Encontrado = true;
             this.descripcion_Error = "Error: El operando no puede ser el acumulador.";
             return;
-
         } else {
-            // Caso en el que el operando 2 sea un registro.
             Integer val = get_Valor_Registros(operandos);
-
             if (val == null) {
-
-                // Activar la bandera de error y meter el texto en la variable de error.
                 this.error_Encontrado = true;
                 this.descripcion_Error = "Error: No se pudo obtener el valor del registro " + operandos;
                 return;
-
             }
-
-            // Realizar la suma directamente.
             AC += val;
         }
-        // } else {
-        // try {
-        // int val = Integer.parseInt(operandos);
-        // AC = AC + val;
-        // } catch (NumberFormatException e) {
-        // System.out.println("ADD: operando inválido: " + operandos);
-        // }
-        // }
     }
 
-    /**
-     * Funcion: ejecutar_SUB
-     * 
-     * Descripcion: Resta el valor de un registro al acumulador AC.
-     * 
-     * @param operandos (String): registro cuyo valor se restara al acumulador AC.
-     */
     private void ejecutar_SUB(String operandos) {
-
-        // Simulacion de un tiempo de espera.
         set_Espera(3);
-
         if (operandos.toUpperCase().equals("AC")) {
-
-            // Levantar la bandera de error, ya que el operando no puede ser el acumulador.
             this.error_Encontrado = true;
             this.descripcion_Error = "Error: El operando no puede ser el acumulador.";
             return;
-
         } else {
-            // Caso en el que el operando 2 sea un registro.
             Integer val = get_Valor_Registros(operandos);
-
             if (val == null) {
-
-                // Activar la bandera de error y meter el texto en la variable de error.
                 this.error_Encontrado = true;
                 this.descripcion_Error = "Error: No se pudo obtener el valor del registro " + operandos;
                 return;
-
             }
-
-            // Realizar la resta directamente.
             AC -= val;
         }
     }
 
-    /**
-     * Funcion: ejecutar_INC
-     * 
-     * Descripcion: Incrementa el valor del registro AC o del registro indicado
-     * segun corresponda en 1 unidad.
-     * 
-     * @param operandos (String): registro cuyo valor se incrementara en 1.
-     */
     private void ejecutar_INC(String operandos) {
-        // Simulacion de un tiempo de espera.
         set_Espera(1);
-
         if (operandos == null || operandos.isEmpty()) {
             AC++;
         } else if (isRegister(operandos)) {
-            // Se optiene el valor actual del registro.
             int val = get_Valor_Registros(operandos);
-
-            // Se le suma el valor actual mas 1.
             set_Valor_Registros(operandos, val + 1);
         } else {
-
-            // Activar la bandera de error y meter el texto en la variable de error.
             this.error_Encontrado = true;
             this.descripcion_Error = "Error: No se pudo obtener el valor del registro " + operandos;
-
-            System.out.println("INC: operando inválido: " + operandos);
         }
     }
 
-    /**
-     * Funcion: ejecutar_DEC
-     * 
-     * Descripcion: Decrementa el valor del registro AC o del registro indicado
-     * segun corresponda en 1 unidad.
-     * 
-     * @param operandos (String): registro cuyo valor se decrementara en 1.
-     */
     private void ejecutar_DEC(String operandos) {
-        // Simulacion de un tiempo de espera.
         set_Espera(1);
-
         if (operandos == null || operandos.isEmpty()) {
             AC--;
         } else if (isRegister(operandos)) {
-            // Se optiene el valor actual del registro.
             int val = get_Valor_Registros(operandos);
-
-            // Se le resta el valor actual menos 1.
             set_Valor_Registros(operandos, val - 1);
         } else {
-
-            // Activar la bandera de error y meter el texto en la variable de error.
             setError_Encontrado(true);
             setDescripcion_Error("Error: No se pudo obtener el valor del registro " + operandos);
-
-            System.out.println("DEC: operando inválido: " + operandos);
         }
     }
 
-    /**
-     * Funcion: ejecutar_SWAP
-     * 
-     * Descripcion: Intercambia el valor de dos registros.
-     * 
-     * @param operando1 (String): primer registro.
-     * @param operando2 (String): segundo registro.
-     */
     private void ejecutar_SWAP(String operando1, String operando2) {
-
-        // Simulacion de un tiempo de espera.
         set_Espera(1);
-
         if (isRegister(operando1) && isRegister(operando2)) {
-
-            // Se optiene el valor actual de los registros.
             int val1 = get_Valor_Registros(operando1);
             int val2 = get_Valor_Registros(operando2);
-
-            // Se intercambia el valor de los registros.
             set_Valor_Registros(operando1, val2);
             set_Valor_Registros(operando2, val1);
-
         } else {
-
-            // Activar la bandera de error y meter el texto en la variable de error.
             setError_Encontrado(true);
             setDescripcion_Error(
                     "Error: No se pudo obtener el valor de los registros " + operando1 + " y " + operando2);
-
-            System.out.println("SWAP: operando inválido: " + operando1 + " y " + operando2);
         }
-
     }
 
-    // TODO: Realizar implementacion del INT
     private void ejecutar_INT(String operandos) {
         String op = operandos.toUpperCase();
         switch (op) {
             case "20H":
-                // Simulacion de un tiempo de espera.
                 set_Espera(2);
-
-                // Finaliza el programa actual
                 proceso_Finalizado = true;
                 System.out.println("INT 20H: finalizar proceso.");
                 break;
-
             case "10H":
-                // Simulacion de un tiempo de espera.
                 set_Espera(2);
-
-                // Imprime en pantalla el valor de DX
                 imprimir_Pantalla = true;
                 System.out.println("INT 10H: SALIDA -> " + DX);
                 break;
-
             case "09H":
-                // Simulacion de un tiempo de espera.
                 set_Espera(2);
-
-                // Se activa la lectura de teclado.
                 leer_Teclado = true;
                 break;
-
             case "21H":
-                // Simulacion de un tiempo de espera.
                 set_Espera(5);
-
-                // Manejo de archivos: DX contiene nombre, AH indica operación
-                // AH <= 3ch crear, AH <= 3dh abrir, AH <= 4dh leer, AH <= 40h escribir, AH <=
-                // 41h eliminar
-                // Implementar integración con tu controlador de archivos/almacenamiento.
-
                 ejecutar_INT_21H(AH, DX);
-
                 break;
-
             default:
                 System.out.println("INT desconocida: " + operandos);
                 break;
@@ -769,29 +469,21 @@ public class CPU {
     private void ejecutar_INT_21H(String pAH, String pDX) {
         switch (pAH.toLowerCase()) {
             case "3ch":
-                // Crear archivo. pDX es el nombre del archivo.
                 this.controlador_Memoria.crear_Archivo(this.getPID_Proceso_Actual(), pDX);
                 break;
             case "3dh":
-                // Abrir archivo. pDX es el nombre del archivo.
                 controlador_Memoria.abrir_Archivo(this.getPID_Proceso_Actual(), pDX);
                 break;
             case "4dh":
-                // Leer archivo. pDX es el nombre del archivo.
                 String lectura = controlador_Memoria.leer_Archivo(this.getPID_Proceso_Actual(), pDX);
                 if (lectura != null) {
-                    // si lees un string, coloca en AL (o en la forma que uses)
                     AL = lectura;
-                } else {
-                    // indicar error en registro de estado si lo manejas
                 }
                 break;
             case "40h":
-                // Escribir archivo. pDX es el nombre del archivo.
                 this.controlador_Memoria.escribir_Archivo(this.getPID_Proceso_Actual(), pDX, AL);
                 break;
             case "41h":
-                // Eliminar archivo. pDX es el nombre del archivo.
                 this.controlador_Memoria.eliminar_Archivo(this.getPID_Proceso_Actual(), pDX);
                 break;
             default:
@@ -800,185 +492,90 @@ public class CPU {
         }
     }
 
-    /**
-     * Funcion: ejecutar_JMP
-     * 
-     * Descripcion: Salta a una posicion de memoria relativa a la posicion actual.
-     * 
-     * @param pOperando1 (String): offset a sumar o restar a la posicion actual.
-     * @return Integer: offset si el salto es valido, null si no lo es.
-     */
     private Integer ejecutar_JMP(String pOperando1) {
-        // Simulacion de un tiempo de espera.
         set_Espera(2);
-
-        // operandos: +N o -N
         String operando = pOperando1.trim();
-        // if (operando.startsWith("+") || operando.startsWith("-")) {
         try {
             Integer offset = Integer.parseInt(operando);
             System.out.println("PC actual: " + PC);
             System.out.println("Salto de: " + offset);
-            // Aqui se deberia de agregar una validacion para comprobar que
-            // el movimiento no exeda los limite del programa.
             Integer resultado = this.memoria_Principal.validar_Salto_Programa(PC + offset, getPID_Proceso_Actual());
-
             if (resultado == 0) {
                 PC += offset;
                 return offset;
-
             } else if (resultado == 1) {
                 setError_Encontrado(true);
                 setDescripcion_Error(
                         "Error: El programa intenta saltar por debajo del limite inferior de la posicion del programa.");
-                System.out.println("JMP: Salto hacia atras.");
                 return null;
-
             } else if (resultado == 2) {
                 setError_Encontrado(true);
                 setDescripcion_Error(
                         "Error: El programa intenta realizar un salto por encima del limite superior de la posicion del programa.");
-                System.out.println("JMP: Salto hacia adelante.");
                 return null;
             }
-
         } catch (NumberFormatException e) {
-
-            // Activar la bandera de error y meter el texto en la variable de error.
             setError_Encontrado(true);
             setDescripcion_Error("Error: No se pudo obtener el valor del registro " + pOperando1);
-
-            System.out.println("JMP: offset inválido: " + pOperando1);
             return null;
         }
-        // }
         return null;
-
     }
 
-    /**
-     * Funcion: ejecutar_CMP
-     * 
-     * Descripcion: Compara el valor de dos registros.
-     * 
-     * @param operando1 (String): primer registro.
-     * @param operando2 (String): segundo registro.
-     */
     private void ejecutar_CMP(String operando1, String operando2) {
-        // Simulacion de un tiempo de espera.
         set_Espera(2);
-
-        // CMP Reg1, Reg2
-
         operando1.trim();
         operando2.trim();
-
         if (isRegister(operando1) && isRegister(operando2)) {
-
             Integer valor1 = get_Valor_Registros(operando1);
             Integer valor2 = get_Valor_Registros(operando2);
-
             if (valor1 == null || valor2 == null) {
-
-                // Activar la bandera de error y meter el texto en la variable de error.
                 setError_Encontrado(true);
                 setDescripcion_Error(
                         "Error: No se pudo obtener el valor de los registros " + operando1 + " y " + operando2);
-                System.out.println("CMP: operando inválido: " + operando1 + " y " + operando2);
                 return;
             }
-
-            if (valor1 == valor2) // Son iguales.
+            if (valor1 == valor2)
                 flag_CMP = 0;
-
-            else if (valor1 > valor2) // El primer valor es mayor que el segundo.
+            else if (valor1 > valor2)
                 flag_CMP = 1;
-
-            else // El primer valor es menor que el segundo.
+            else
                 flag_CMP = 2;
         } else {
-            // Activar la bandera de error y meter el texto en la variable de error.
             setError_Encontrado(true);
             setDescripcion_Error(
                     "Error: No se pudo obtener el valor de los registros " + operando1 + " y " + operando2);
-            System.out.println("CMP: operando inválido: " + operando1 + " y " + operando2);
-            return;
         }
-
     }
 
-    /**
-     * Funcion: ejecutar_JE
-     * 
-     * Descripcion: Realiza un salto JE si el valor de los registros es igual.
-     * 
-     * @param pOperando1 (String): valor de desplazamiento.
-     */
     private void ejecutar_JE(String pOperando1) {
-        // Simulacion de un tiempo de espera.
         set_Espera(2);
         if (flag_CMP == 0) {
-            // Caso en el que los numeros sean iguales
             Integer resultado = ejecutar_JMP(pOperando1);
-
-            if (resultado != null) {
-                // Ya se aumenta PC en JMP
-
-                // PC += resultado;
-            } else {
+            if (resultado == null) {
                 setError_Encontrado(true);
                 setDescripcion_Error("Error: No se pudo realizar el salto JE");
             }
         } else {
-            // Caso en el que no sean iguales, se aumenta en 1 la posicion del PC.
             PC++;
         }
     }
 
-    /**
-     * Funcion: ejecutar_JNE
-     * 
-     * Descripcion: Realiza un salto JNE si el valor de los registros no es igual.
-     * 
-     * @param pOperando1 (String): valor de desplazamiento.
-     */
     private void ejecutar_JNE(String pOperando1) {
-        // Simulacion de un tiempo de espera.
         set_Espera(2);
-
         if (flag_CMP != 0) {
             Integer resultado = ejecutar_JMP(pOperando1);
-
-            if (resultado != null) {
-                // Ya se aumenta PC en JMP
-                // PC += resultado;
-            } else {
+            if (resultado == null) {
                 setError_Encontrado(true);
                 setDescripcion_Error("Error: No se pudo realizar el salto JNE");
             }
         } else {
-            // Caso en el que no sean iguales, se aumenta en 1 la posicion del PC.
             PC++;
         }
     }
 
-    /**
-     * Funcion: ejecutar_PARAM
-     * 
-     * Descripcion: Empuja hasta 3 parámetros a la pila del proceso.
-     * 
-     * @param pOperando1 (String): primer parámetro.
-     * @param pOperando2 (String): segundo parámetro.
-     * @param pOperando3 (String): tercer parámetro.
-     */
     private void ejecutar_PARAM(String pOperando1, String pOperando2, String pOperando3) {
-        // Simulacion de un tiempo de espera.
         set_Espera(3);
-
-        System.out.println("Procesando PARAM");
-        System.out.println("1-operando: " + pOperando1);
-        System.out.println("2-operando: " + pOperando2);
-        System.out.println("3-operando: " + pOperando3);
         if (pOperando1 != null) {
             pOperando1.trim();
             ejecutar_PUSH(pOperando1);
@@ -990,53 +587,28 @@ public class CPU {
         if (pOperando3 != null) {
             pOperando3.trim();
             ejecutar_PUSH(pOperando3);
-
         }
-
     }
 
-    /**
-     * Funcion: ejecutar_PUSH
-     * 
-     * Descripcion: Empuja un valor a la pila del proceso.
-     * 
-     * @param pOperando1 (String): valor a empujar.
-     */
     private void ejecutar_PUSH(String pOperando1) {
-        // Simulacion de un tiempo de espera.
         set_Espera(1);
-
-        if (isRegister(pOperando1)) { // Caso en el que es un registro.
-
+        if (isRegister(pOperando1)) {
             Integer val = get_Valor_Registros(pOperando1);
-
             if (val != null) {
                 push_A_Pila_Proceso(val);
-
             } else {
                 setError_Encontrado(true);
                 setDescripcion_Error("Error: No se pudo obtener el valor del registro " + pOperando1);
             }
-
-        } else { // Caso en el que es un valor numerico.
+        } else {
             Integer val = parser_String_To_Integer(pOperando1);
-
-            if (val != null) { // Se si pudo convertir el dato a un valor numerico, se agrega a la pila.
+            if (val != null) {
                 push_A_Pila_Proceso(val);
             }
         }
     }
 
-    /**
-     * Funcion: ejecutar_POP
-     * 
-     * Descripcion: Saca un valor de la pila del proceso.
-     * 
-     * @param operandos (String): valor a sacar.
-     */
     private void ejecutar_POP(String operandos) {
-
-        // Simulacion de un tiempo de espera.
         set_Espera(1);
         Integer val = pop_De_Pila_Proceso();
         if (val == null) {
@@ -1046,16 +618,10 @@ public class CPU {
         if (isRegister(operandos)) {
             set_Valor_Registros(operandos, val);
         } else {
-            // Activar la bandera de error y meter el texto en la variable de error.
             setError_Encontrado(true);
             setDescripcion_Error("Error: No se pudo obtener el valor del registro " + operandos);
-            System.out.println("POP: destino invalido: " + operandos);
         }
     }
-
-    // -----------------------
-    // Helpers y utilidades
-    // -----------------------
 
     private boolean isRegister(String token) {
         if (token == null)
@@ -1077,28 +643,23 @@ public class CPU {
             case "CX":
                 return CX;
             case "DX":
-
-                // hacer un try para intentar parsear DX a numero.
                 try {
                     return Integer.parseInt(DX);
                 } catch (NumberFormatException e) {
                     return null;
                 }
             case "AH":
-                // Obtener el valor de AH, convirtiendolo a integer.
                 try {
                     return Integer.parseInt(AH);
                 } catch (NumberFormatException e) {
                     return null;
                 }
             case "AL":
-                // Obtener el valor de AL, convirtiendolo a integer.
                 try {
                     return Integer.parseInt(AL);
                 } catch (NumberFormatException e) {
                     return null;
                 }
-
             default:
                 return null;
         }
@@ -1150,8 +711,6 @@ public class CPU {
             case "AL":
                 this.AL = String.valueOf(valor);
                 break;
-            default:
-                break;
         }
     }
 
@@ -1165,9 +724,7 @@ public class CPU {
         }
     }
 
-    // Lectura/escritura en memoria: adaptar a tu clase Memoria
     private String leer_Memoria(int posicion) {
-        // Si tu Memoria usa otro método, cámbialo aquí.
         return this.controlador_Memoria.obtener_intruccion_Proceso(posicion);
     }
 
@@ -1175,78 +732,39 @@ public class CPU {
         memoria_Principal.modificar_valor_en_memoria(posicion, valor);
     }
 
-    // -----------------------
-    // Pila del proceso (stubs)
-    // -----------------------
-    // En tu diseño la pila está en el BCP (int[] Pila). Aquí dejo stubs que debes
-    // integrar
-    // con el BCP actual del proceso en ejecución.
-
     private void push_A_Pila_Proceso(int valor) {
-
-        // Aqui se tendrian que agregar validaciones para ver si hay espacio en la pila.
-
         Integer val = memoria_Principal.agregar_Dato_Pila(this.getPID_Proceso_Actual(), String.valueOf(valor));
         if (val == 1) {
-
-            // Activar la bandera de error y meter el texto en la variable de error.
             setError_Encontrado(true);
             setDescripcion_Error("Error: No se encontro la BCP del proceso actual. " + this.getPID_Proceso_Actual());
-            return;
-
         } else if (val == 2) {
-
-            // Activar la bandera de error y meter el texto en la variable de error.
             setError_Encontrado(true);
             setDescripcion_Error("Error: No hay espacio en la pila, se salen de los limites superios.");
-            return;
-        } else {
-
-            return;
         }
-
-        // System.out.println("PUSH (stub): " + valor + " -> (debes integrar con BCP)");
     }
 
     private Integer pop_De_Pila_Proceso() {
-
-        // System.out.println("POP (stub): (debes integrar con BCP)");
-        // Aqui se tendria que agregar validaciones para ver si hay datos en la pila.
-
         Integer val = memoria_Principal.obtener_Dato_Pila(this.getPID_Proceso_Actual());
         if (val == null) {
-
-            // Activar la bandera de error y meter el texto en la variable de error.
             setError_Encontrado(true);
             setDescripcion_Error("Error: No hay datos en la pila. Se salen de los limites inferiores.");
             return null;
-
         } else {
-
             return val;
         }
-
-        // return null;
     }
 
-    // -----------------------
-    // Entrada de teclado (stub)
-    // -----------------------
     public int leer_Entrada_Teclado(int pDato) {
-
-        // Modificar el valor del registro DX.
         set_Valor_Registros("DX", pDato);
-
         return pDato;
     }
 
     public void set_Espera(int pEspera) {
-
         try {
             this.tiempo_CPU += pEspera;
-            Thread.sleep(pEspera * 1000); // convertir segundos a milisegundos
+            Thread.sleep(pEspera * 1000);
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt(); // buena práctica: restaurar estado de interrupción
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -1287,5 +805,4 @@ public class CPU {
         this.imprimir_Pantalla = false;
         this.leer_Teclado = false;
     }
-
 }

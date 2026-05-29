@@ -1,27 +1,11 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-package Modelo;
+package Config;
 
-/**
- *
- * @author edurg
- */
 public class Configuracion {
 
     private int memoria;
     private int almacenamiento;
     private int memoria_Virtual;
     private int cant_CPU;
-
-    // public Configuracion(int memoria, int almacenamiento, int memoria_virtual,
-    // int cant_cpu) {
-    // this.Memoria = memoria;
-    // this.Almacenamiento = almacenamiento;
-    // this.Memoria_Virtual = memoria_virtual;
-    // this.Cant_CPU = cant_cpu;
-    // }
 
     public int getMemoria() {
         return memoria;
@@ -57,8 +41,7 @@ public class Configuracion {
 
     @Override
     public String toString() {
-        return "Configuracion [Memoria=" + memoria + ", Almacenamiento=" + almacenamiento
-                + ", Memoria_Virtual=" + memoria_Virtual + ", Cant_CPU=" + cant_CPU + "]";
+        return "Configuracion [Memoria=" + memoria + ", Almacenamiento=" + almacenamiento + ", Memoria_Virtual="
+                + memoria_Virtual + ", Cant_CPU=" + cant_CPU + "]";
     }
-
 }
