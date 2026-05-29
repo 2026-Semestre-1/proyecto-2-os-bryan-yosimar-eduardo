@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import config.Configuracion;
+import Config.Configuracion;
 
 public class NucleoSO {
     private Memoria memoria = null;
@@ -30,7 +30,9 @@ public class NucleoSO {
 
     public int cargar_configuracion() {
         Configuracion config = GestorArchivos.cargarConfiguracion();
-        if (config == null) { return 1; }
+        if (config == null) {
+            return 1;
+        }
         crear_almacenamiento(config.getAlmacenamiento(), config.getMemoria_Virtual(), 20);
         crear_memoria(config.getMemoria());
         crear_CPU(config.getCant_CPU());
@@ -51,20 +53,31 @@ public class NucleoSO {
         this.cpu1 = new CPU(1, memoria, controlador_Memoria);
     }
 
-    public Memoria getMemoria() { return memoria; }
-    public Almacenamiento getAlmacenamiento() { return almacenamiento; }
+    public Memoria getMemoria() {
+        return memoria;
+    }
+
+    public Almacenamiento getAlmacenamiento() {
+        return almacenamiento;
+    }
 
     public List<String> cargar_archivo(String ruta, String pNombre_Archivo) {
         List<String> errores = new ArrayList<>();
         if (almacenamiento.existe_Archivo(pNombre_Archivo)) {
-            errores.add("1"); errores.add("Error: Ya existe un archivo con ese nombre."); return errores;
+            errores.add("1");
+            errores.add("Error: Ya existe un archivo con ese nombre.");
+            return errores;
         }
         Codigo_ASM codigo = GestorArchivos.Cargar_Archivo_ASM(ruta);
         if (codigo.isHay_errores()) {
-            errores.add("2"); errores.add("Error:" + codigo.getErrores().toString()); return errores;
+            errores.add("2");
+            errores.add("Error:" + codigo.getErrores().toString());
+            return errores;
         }
         if (codigo.getContador_Intrucciones() == 0) {
-            errores.add("3"); errores.add("Error: El Archvivo esta vacio"); return errores;
+            errores.add("3");
+            errores.add("Error: El Archvivo esta vacio");
+            return errores;
         }
         asignar_Almacenamiento(codigo, pNombre_Archivo);
         this.planificador.extraer_Programas_Almacenamiento(almacenamiento);
@@ -77,20 +90,33 @@ public class NucleoSO {
                 + "/" + memoria.getEspacio_OS());
         if (programa_Iniciado == false) {
             int inicio = this.planificador.get_PID_Primer_Proceso_Nuevo();
-            if (inicio != -1) { iniciar_Despachador(inicio); }
-            else { errores.add("4"); errores.add("Error: No hay procesos nuevos para ejecutar."); return errores; }
+            if (inicio != -1) {
+                iniciar_Despachador(inicio);
+            } else {
+                errores.add("4");
+                errores.add("Error: No hay procesos nuevos para ejecutar.");
+                return errores;
+            }
             programa_Iniciado = true;
         }
-        errores.add("0"); errores.add("Exito al leer el archivo."); return errores;
+        errores.add("0");
+        errores.add("Exito al leer el archivo.");
+        return errores;
     }
 
     public int asignar_Almacenamiento(Codigo_ASM codigo, String pNombre_Archivo) {
-        if (this.almacenamiento.espacio_Disponible_Indices() == 0) { return 1; }
-        if (this.almacenamiento.espacio_Disponible_Programas() < codigo.getContador_Intrucciones()) { return 2; }
+        if (this.almacenamiento.espacio_Disponible_Indices() == 0) {
+            return 1;
+        }
+        if (this.almacenamiento.espacio_Disponible_Programas() < codigo.getContador_Intrucciones()) {
+            return 2;
+        }
         return this.almacenamiento.asignar_Memoria_A_Programa(codigo, pNombre_Archivo);
     }
 
-    public int asignar_memoria(Codigo_ASM pCodigo) { return this.memoria.asignar_memoria_a_programa(pCodigo); }
+    public int asignar_memoria(Codigo_ASM pCodigo) {
+        return this.memoria.asignar_memoria_a_programa(pCodigo);
+    }
 
     public void iniciar_Despachador(int pPID) {
         Despachador.despachador(this.cpu1, this.memoria, pPID);
@@ -101,9 +127,15 @@ public class NucleoSO {
     public boolean comprobar_Finalizacion_Proceso() {
         int PID_actual = this.cpu1.getPID_Proceso_Actual();
         int proceso_Finalizado = this.controlador_Memoria.comprobar_Finalizacion_Proceso(PID_actual);
-        if (proceso_Finalizado == 1) { return true; }
-        else if (proceso_Finalizado == -1) { System.out.println("-> Controlador Principal: No se encontro el proceso con el PID indicado."); return true; }
-        else { System.out.println("-> Controlador Principal: El proceso no ha finalizado."); return false; }
+        if (proceso_Finalizado == 1) {
+            return true;
+        } else if (proceso_Finalizado == -1) {
+            System.out.println("-> Controlador Principal: No se encontro el proceso con el PID indicado.");
+            return true;
+        } else {
+            System.out.println("-> Controlador Principal: El proceso no ha finalizado.");
+            return false;
+        }
     }
 
     public void sincronizar_Datos_CPU_Memoria_BCP() {
@@ -120,23 +152,38 @@ public class NucleoSO {
         if (this.planificador.hay_Procesos_Nuevos()) {
             System.out.println("--> Controlador Principal: Hay procesos nuevos");
             int PID_siguiente = this.planificador.get_PID_Primer_Proceso_Nuevo();
-            if (PID_siguiente != -1) { iniciar_Despachador(PID_siguiente); this.programa_Iniciado = true; return 0; }
-            else { this.programa_Iniciado = false; return 1; }
-        } else { this.programa_Iniciado = false; return 1; }
+            if (PID_siguiente != -1) {
+                iniciar_Despachador(PID_siguiente);
+                this.programa_Iniciado = true;
+                return 0;
+            } else {
+                this.programa_Iniciado = false;
+                return 1;
+            }
+        } else {
+            this.programa_Iniciado = false;
+            return 1;
+        }
     }
 
     public List<String> ejecutar() {
-        if (!this.programa_Iniciado) { return null; }
+        if (!this.programa_Iniciado) {
+            return null;
+        }
         if (!this.hay_interrupcion) {
             this.cpu1.reiniciar_Interrupciones();
             this.cpu1.ejecutar_Siguiente_Instruccion();
             this.sincronizar_Datos_CPU_Memoria_BCP();
             return this.procesar_Interrupciones(cpu1.getPID_Proceso_Actual());
-        } else { return null; }
+        } else {
+            return null;
+        }
     }
 
     public List<String> paso_a_paso() {
-        if (!this.programa_Iniciado) { return null; }
+        if (!this.programa_Iniciado) {
+            return null;
+        }
         if (!this.comprobar_Finalizacion_Proceso()) {
             if (!this.hay_interrupcion) {
                 this.cpu1.reiniciar_Interrupciones();
@@ -154,16 +201,27 @@ public class NucleoSO {
     public List<String> procesar_Interrupciones(int pPID_Actual) {
         List<String> salida = new ArrayList<>();
         if (cpu1.isError_Encontrado()) {
-            salida.add(String.valueOf(1)); salida.add(this.cpu1.getDescripcion_Error());
-            this.cpu1.reiniciar_Datos_CPU(); this.finalizacion_Proceso_FCFS(pPID_Actual); return salida;
+            salida.add(String.valueOf(1));
+            salida.add(this.cpu1.getDescripcion_Error());
+            this.cpu1.reiniciar_Datos_CPU();
+            this.finalizacion_Proceso_FCFS(pPID_Actual);
+            return salida;
         } else if (cpu1.isLeer_Teclado()) {
-            salida.add(String.valueOf(2)); this.hay_interrupcion = true; return salida;
+            salida.add(String.valueOf(2));
+            this.hay_interrupcion = true;
+            return salida;
         } else if (cpu1.isImprimir_Pantalla()) {
-            salida.add(String.valueOf(3)); salida.add(this.cpu1.getDX()); return salida;
+            salida.add(String.valueOf(3));
+            salida.add(this.cpu1.getDX());
+            return salida;
         } else if (cpu1.isProceso_Finalizado()) {
-            salida.add(String.valueOf(4)); this.finalizacion_Proceso_FCFS(pPID_Actual); return salida;
+            salida.add(String.valueOf(4));
+            this.finalizacion_Proceso_FCFS(pPID_Actual);
+            return salida;
         } else {
-            String valor = String.valueOf(0); salida.add(valor); return salida;
+            String valor = String.valueOf(0);
+            salida.add(valor);
+            return salida;
         }
     }
 
@@ -174,7 +232,9 @@ public class NucleoSO {
         this.sincronizar_Datos_CPU_Memoria_BCP();
     }
 
-    public void procesar_Finalizacion_Proceso() { finalizacion_Proceso_FCFS(cpu1.getPID_Proceso_Actual()); }
+    public void procesar_Finalizacion_Proceso() {
+        finalizacion_Proceso_FCFS(cpu1.getPID_Proceso_Actual());
+    }
 
     public BCP obtener_Datos_BCP_Actual() {
         int pid_ProcesoActual = this.cpu1.getPID_Proceso_Actual();
@@ -182,45 +242,65 @@ public class NucleoSO {
         return this.memoria.obtener_Datos_BCP(pid_ProcesoActual);
     }
 
-    public Map<Integer, String> getLista_Proceso() { return this.planificador.obtener_Estado_5_Procesos(); }
-    public List<BCP> getLista_Procesos_Terminados() { return this.planificador.getCola_Procesos_Terminados(); }
-    public boolean hay_Interrupcion() { return this.hay_interrupcion; }
-    public boolean hay_Procesos_Nuevos() { return this.planificador.hay_Procesos_Nuevos(); }
+    public Map<Integer, String> getLista_Proceso() {
+        return this.planificador.obtener_Estado_5_Procesos();
+    }
+
+    public List<BCP> getLista_Procesos_Terminados() {
+        return this.planificador.getCola_Procesos_Terminados();
+    }
+
+    public boolean hay_Interrupcion() {
+        return this.hay_interrupcion;
+    }
+
+    public boolean hay_Procesos_Nuevos() {
+        return this.planificador.hay_Procesos_Nuevos();
+    }
 
     public void limpiar() {
-        this.memoria = null; this.almacenamiento = null; this.cpu1 = null;
-        this.controlador_Memoria = null; this.planificador = null;
-        this.contador_ciclos = 0; this.programa_Iniciado = false;
+        this.memoria = null;
+        this.almacenamiento = null;
+        this.cpu1 = null;
+        this.controlador_Memoria = null;
+        this.planificador = null;
+        this.contador_ciclos = 0;
+        this.programa_Iniciado = false;
     }
 
     public void reiniciar_programa() {
-        this.memoria = null; this.cpu1 = null; this.almacenamiento = null;
-        this.controlador_Memoria = null; this.planificador = null;
-        this.contador_ciclos = 0; this.programa_Iniciado = false; this.hay_interrupcion = false;
+        this.memoria = null;
+        this.cpu1 = null;
+        this.almacenamiento = null;
+        this.controlador_Memoria = null;
+        this.planificador = null;
+        this.contador_ciclos = 0;
+        this.programa_Iniciado = false;
+        this.hay_interrupcion = false;
         this.planificador = new Planificador();
         cargar_configuracion();
     }
 
-    public void activar_Espera() { this.cpu1.set_Espera(3); }
+    public void activar_Espera() {
+        this.cpu1.set_Espera(3);
+    }
 
     public SnapshotSistema tomarSnapshot() {
         if (cpu1 == null || memoria == null) {
             return new SnapshotSistema(
-                memoria,
-                almacenamiento,
-                new java.util.HashMap<>(),
-                null,
-                new java.util.ArrayList<>(),
-                this.hay_interrupcion
-            );
+                    memoria,
+                    almacenamiento,
+                    new java.util.HashMap<>(),
+                    null,
+                    new java.util.ArrayList<>(),
+                    this.hay_interrupcion);
         }
         return new SnapshotSistema(
-            memoria,
-            almacenamiento,
-            this.planificador.obtener_Estado_5_Procesos(),
-            obtener_Datos_BCP_Actual(),
-            this.planificador.getCola_Procesos_Terminados(),
-            this.hay_interrupcion
-        );
+                memoria,
+                almacenamiento,
+                this.planificador.obtener_Estado_5_Procesos(),
+                obtener_Datos_BCP_Actual(),
+                this.planificador.getCola_Procesos_Terminados(),
+                this.hay_interrupcion);
     }
 }

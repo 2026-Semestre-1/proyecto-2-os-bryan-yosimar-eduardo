@@ -26,27 +26,57 @@ public class Planificador {
         this.cola_Procesos_Terminados = new ArrayList<>();
     }
 
-    public List<String> getCola_Programas_Pendientes() { return cola_Programas_Pendientes; }
-    public Map<Integer, BCP> getCola_Procesos_Nuevos() { return cola_Procesos_Nuevos; }
-    public List<BCP> getCola_Procesos_Terminados() { return cola_Procesos_Terminados; }
-    public void agregar_Programa_Pendiente(String nombre) { this.cola_Programas_Pendientes.add(nombre); }
-    public void agregar_Proceso_Nuevo(int pid, BCP bcp) { this.cola_Procesos_Nuevos.put(pid, bcp); }
-    public void agregar_Proceso_Terminado(BCP bcp) { this.cola_Procesos_Terminados.add(bcp); }
-    public void setControlador_Memoria(GestorMemoria pNuevo_Controlador) { this.controlador_Memoria = pNuevo_Controlador; }
+    public List<String> getCola_Programas_Pendientes() {
+        return cola_Programas_Pendientes;
+    }
+
+    public Map<Integer, BCP> getCola_Procesos_Nuevos() {
+        return cola_Procesos_Nuevos;
+    }
+
+    public List<BCP> getCola_Procesos_Terminados() {
+        return cola_Procesos_Terminados;
+    }
+
+    public void agregar_Programa_Pendiente(String nombre) {
+        this.cola_Programas_Pendientes.add(nombre);
+    }
+
+    public void agregar_Proceso_Nuevo(int pid, BCP bcp) {
+        this.cola_Procesos_Nuevos.put(pid, bcp);
+    }
+
+    public void agregar_Proceso_Terminado(BCP bcp) {
+        this.cola_Procesos_Terminados.add(bcp);
+    }
+
+    public void setControlador_Memoria(GestorMemoria pNuevo_Controlador) {
+        this.controlador_Memoria = pNuevo_Controlador;
+    }
 
     public int get_PID_Primer_Proceso_Nuevo() {
         int count = 0;
         for (BCP bcp : this.cola_Procesos_Nuevos.values()) {
-            if (count == 0) { return bcp.getPID(); }
+            if (count == 0) {
+                return bcp.getPID();
+            }
             count++;
             break;
         }
         return -1;
     }
 
-    public void eliminar_Programa_Pendiente(String nombre) { this.cola_Programas_Pendientes.remove(nombre); }
-    public void eliminar_Proceso_Nuevo(int pid) { this.cola_Procesos_Nuevos.remove(pid); }
-    public void eliminar_Proceso_Terminado(int pid) { this.cola_Procesos_Terminados.remove(pid); }
+    public void eliminar_Programa_Pendiente(String nombre) {
+        this.cola_Programas_Pendientes.remove(nombre);
+    }
+
+    public void eliminar_Proceso_Nuevo(int pid) {
+        this.cola_Procesos_Nuevos.remove(pid);
+    }
+
+    public void eliminar_Proceso_Terminado(int pid) {
+        this.cola_Procesos_Terminados.remove(pid);
+    }
 
     public Codigo_ASM obtener_Programa_Almacenamiento(Almacenamiento pMemoria_Secundaria, String pNombre_Programa) {
         System.out.println("Planificador: Obteniendo el programa: " + pNombre_Programa);
@@ -58,14 +88,18 @@ public class Planificador {
 
     public boolean esta_en_cola_procesos_nuevos(String nombre) {
         for (BCP bcp : this.cola_Procesos_Nuevos.values()) {
-            if (bcp.getNombre_Programa().equals(nombre)) { return true; }
+            if (bcp.getNombre_Programa().equals(nombre)) {
+                return true;
+            }
         }
         return false;
     }
 
     public boolean esta_en_cola_procesos_terminados(String nombre) {
         for (BCP bcp : this.cola_Procesos_Terminados) {
-            if (bcp.getNombre_Programa().equals(nombre)) { return true; }
+            if (bcp.getNombre_Programa().equals(nombre)) {
+                return true;
+            }
         }
         return false;
     }
@@ -73,11 +107,17 @@ public class Planificador {
     public void extraer_Programas_Almacenamiento(Almacenamiento pMemoria_Secundaria) {
         Map<String, List<Integer>> indices_Programas = pMemoria_Secundaria.optener_Indices();
         for (String nombre_Programa : indices_Programas.keySet()) {
-            if (nombre_Programa == null) { continue; }
+            if (nombre_Programa == null) {
+                continue;
+            }
             String nombreTrim = nombre_Programa.trim();
-            if (nombreTrim.isEmpty()) { continue; }
+            if (nombreTrim.isEmpty()) {
+                continue;
+            }
             String lower = nombreTrim.toLowerCase();
-            if (!lower.endsWith(".asm")) { continue; }
+            if (!lower.endsWith(".asm")) {
+                continue;
+            }
             if (!this.cola_Programas_Pendientes.contains(nombreTrim)
                     && !this.esta_en_cola_procesos_nuevos(nombreTrim)
                     && !this.esta_en_cola_procesos_terminados(nombreTrim)) {
@@ -123,7 +163,8 @@ public class Planificador {
                 estado = "En Ejecuccion";
                 count_Iteraciones++;
             }
-            System.out.println("[DEBUG ESTADO] PID=" + bcp.getPID() + " (" + bcp.getNombre_Programa() + ") -> " + estado);
+            System.out
+                    .println("[DEBUG ESTADO] PID=" + bcp.getPID() + " (" + bcp.getNombre_Programa() + ") -> " + estado);
             bcp.setEstado(estado);
             this.controlador_Memoria.actualizar_Estado_BCP(bcp.getPID(), estado);
         }
@@ -145,7 +186,9 @@ public class Planificador {
         }
         if (cant_Procesos < 5) {
             for (int i = 0; i < this.cola_Programas_Pendientes.size(); i++) {
-                if (cant_Procesos == 5) { break; }
+                if (cant_Procesos == 5) {
+                    break;
+                }
                 int pid = this.controlador_Memoria.get_Nuevo_PID();
                 procesos.put(pid + i, "Nuevo");
                 cant_Procesos++;
@@ -192,8 +235,11 @@ public class Planificador {
                 this.controlador_Memoria.asignar_Memoria_Programa(codigo);
                 System.out.println("Planificador: PASS 5");
                 int pid_Siguiente = 0;
-                if (i == 4) { pid_Siguiente = -1; }
-                else { pid_Siguiente = pid + 1; }
+                if (i == 4) {
+                    pid_Siguiente = -1;
+                } else {
+                    pid_Siguiente = pid + 1;
+                }
                 pMemoria_Principal.modificar_Enlace_Siguiente_BCP(pid, pid_Siguiente);
                 BCP nuevo_BCP = pMemoria_Principal.obtener_Datos_BCP(pid);
                 nuevo_BCP.setNombre_Programa(nombre_Programa);
@@ -203,7 +249,9 @@ public class Planificador {
                 System.out.println("Planificador: PASS 7");
                 this.eliminar_Programa_Pendiente(nombre_Programa);
                 System.out.println("Planificador: PASS 8");
-            } else { break; }
+            } else {
+                break;
+            }
         }
     }
 
@@ -212,8 +260,11 @@ public class Planificador {
             BCP bcp = this.cola_Procesos_Nuevos.get(i);
             int PID_Proceso_Actual = Integer.valueOf(bcp.getPID());
             int pid_Siguiente = 0;
-            if (i == 4) { pid_Siguiente = -1; }
-            else { pid_Siguiente = PID_Proceso_Actual + 1; }
+            if (i == 4) {
+                pid_Siguiente = -1;
+            } else {
+                pid_Siguiente = PID_Proceso_Actual + 1;
+            }
             pMemoria_Principal.modificar_Enlace_Siguiente_BCP(PID_Proceso_Actual, pid_Siguiente);
             BCP bcp_Actual = pMemoria_Principal.obtener_Datos_BCP(PID_Proceso_Actual);
             bcp_Actual.setNombre_Programa(bcp.getNombre_Programa());
@@ -222,7 +273,9 @@ public class Planificador {
     }
 
     public boolean hay_Procesos_Nuevos() {
-        if (this.cola_Procesos_Nuevos.isEmpty()) { return false; }
+        if (this.cola_Procesos_Nuevos.isEmpty()) {
+            return false;
+        }
         return true;
     }
 

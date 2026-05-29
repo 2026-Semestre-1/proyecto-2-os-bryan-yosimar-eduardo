@@ -34,240 +34,282 @@ public class Ventana_Principal extends javax.swing.JFrame {
         }
 
         @SuppressWarnings("unchecked")
-    private void initComponents() {
+        private void initComponents() {
 
-        Ejecutar_BTN = new javax.swing.JButton();
-        Paso_A_Paso_BTN = new javax.swing.JButton();
-        Limpiar_BTN = new javax.swing.JButton();
-        Estadisticas_BTN = new javax.swing.JButton();
-        Cargar_Archivos_BTN = new javax.swing.JButton();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        Tabla_Procesos = new javax.swing.JTable();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        Tabla_BCP = new javax.swing.JTable();
-        jScrollPane3 = new javax.swing.JScrollPane();
-        Tabla_Memoria = new javax.swing.JTable();
-        jScrollPane4 = new javax.swing.JScrollPane();
-        Tabla_Almacenamiento = new javax.swing.JTable();
-        Lista_Procesos_Label = new javax.swing.JLabel();
-        BCP_Label = new javax.swing.JLabel();
-        Memoria_Label = new javax.swing.JLabel();
-        Almacenamiento_Label = new javax.swing.JLabel();
-        jScrollPane5 = new javax.swing.JScrollPane();
-        terminal_Text_Area = new javax.swing.JTextArea();
-        Terminal_Text_Area_Label = new javax.swing.JLabel();
-        jScrollPane6 = new javax.swing.JScrollPane();
-        Tabla_Estadisticas = new javax.swing.JTable();
-        jLabel1 = new javax.swing.JLabel();
+                Ejecutar_BTN = new javax.swing.JButton();
+                Paso_A_Paso_BTN = new javax.swing.JButton();
+                Limpiar_BTN = new javax.swing.JButton();
+                Estadisticas_BTN = new javax.swing.JButton();
+                Cargar_Archivos_BTN = new javax.swing.JButton();
+                jScrollPane1 = new javax.swing.JScrollPane();
+                Tabla_Procesos = new javax.swing.JTable();
+                jScrollPane2 = new javax.swing.JScrollPane();
+                Tabla_BCP = new javax.swing.JTable();
+                jScrollPane3 = new javax.swing.JScrollPane();
+                Tabla_Memoria = new javax.swing.JTable();
+                jScrollPane4 = new javax.swing.JScrollPane();
+                Tabla_Almacenamiento = new javax.swing.JTable();
+                Lista_Procesos_Label = new javax.swing.JLabel();
+                BCP_Label = new javax.swing.JLabel();
+                Memoria_Label = new javax.swing.JLabel();
+                Almacenamiento_Label = new javax.swing.JLabel();
+                jScrollPane5 = new javax.swing.JScrollPane();
+                terminal_Text_Area = new javax.swing.JTextArea();
+                Terminal_Text_Area_Label = new javax.swing.JLabel();
+                jScrollPane6 = new javax.swing.JScrollPane();
+                Tabla_Estadisticas = new javax.swing.JTable();
+                jLabel1 = new javax.swing.JLabel();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setBackground(new java.awt.Color(102, 102, 102));
+                setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+                setBackground(new java.awt.Color(102, 102, 102));
 
-        Ejecutar_BTN.setText("Ejecutar");
-        Ejecutar_BTN.addActionListener(this::Ejecutar_BTNActionPerformed);
+                Ejecutar_BTN.setText("Ejecutar");
+                Ejecutar_BTN.addActionListener(this::Ejecutar_BTNActionPerformed);
 
-        Paso_A_Paso_BTN.setText("Paso a paso");
-        Paso_A_Paso_BTN.addActionListener(this::Paso_A_Paso_BTNActionPerformed);
+                Paso_A_Paso_BTN.setText("Paso a paso");
+                Paso_A_Paso_BTN.addActionListener(this::Paso_A_Paso_BTNActionPerformed);
 
-        Limpiar_BTN.setText("Limpiar");
-        Limpiar_BTN.addActionListener(this::Limpiar_BTNActionPerformed);
+                Limpiar_BTN.setText("Limpiar");
+                Limpiar_BTN.addActionListener(this::Limpiar_BTNActionPerformed);
 
-        Estadisticas_BTN.setText("Estadisticas");
-        Estadisticas_BTN.addActionListener(this::Estadisticas_BTNActionPerformed);
+                Estadisticas_BTN.setText("Estadisticas");
+                Estadisticas_BTN.addActionListener(this::Estadisticas_BTNActionPerformed);
 
-        Cargar_Archivos_BTN.setText("Cargar Archivos");
-        Cargar_Archivos_BTN.addActionListener(this::Cargar_Archivos_BTNActionPerformed);
+                Cargar_Archivos_BTN.setText("Cargar Archivos");
+                Cargar_Archivos_BTN.addActionListener(this::Cargar_Archivos_BTNActionPerformed);
 
-        Tabla_Procesos.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
+                Tabla_Procesos.setModel(new javax.swing.table.DefaultTableModel(
+                                new Object[][] {
 
-            },
-            new String [] {
-                "Proceso", "Estado"
-            }
-        ) {
-            Class[] types = new Class [] {
-                java.lang.String.class, java.lang.String.class
-            };
+                                },
+                                new String[] {
+                                                "Proceso", "Estado"
+                                }) {
+                        Class[] types = new Class[] {
+                                        java.lang.String.class, java.lang.String.class
+                        };
 
-            public Class getColumnClass(int columnIndex) {
-                return types [columnIndex];
-            }
-        });
-        jScrollPane1.setViewportView(Tabla_Procesos);
+                        public Class getColumnClass(int columnIndex) {
+                                return types[columnIndex];
+                        }
+                });
+                jScrollPane1.setViewportView(Tabla_Procesos);
 
-        Tabla_BCP.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-                {"PID:", null},
-                {"Estado:", null},
-                {"Prioridad:", null},
-                {"Inicio Memoria:", null},
-                {"Final Memoria:", null},
-                {"PC:", null},
-                {"IR:", null},
-                {"AC:", null},
-                {"AX:", null},
-                {"BX", null},
-                {"CX:", null},
-                {"DX:", null},
-                {"AH:", null},
-                {"AL:", null},
-                {"Lista Archivos:", null},
-                {"CPU Asignada:", null},
-                {"Tiempo Llegada:", null},
-                {"Tiempo Inicio:", null},
-                {"Tiempo Finalizaci\u00f3n:", null},
-                {"Duraci\u00f3n Estimada:", null},
-                {"Proximo Proceso:", null},
-                {"Pila (0):", null},
-                {"Pila (1):", null},
-                {"Pila (2):", null},
-                {"Pila (3):", null},
-                {"Pila (4):", null}
-            },
-            new String [] {
-                "Dato", "Valor"
-            }
-        ));
-        jScrollPane2.setViewportView(Tabla_BCP);
+                Tabla_BCP.setModel(new javax.swing.table.DefaultTableModel(
+                                new Object[][] {
+                                                { "PID:", null },
+                                                { "Estado:", null },
+                                                { "Prioridad:", null },
+                                                { "Inicio Memoria:", null },
+                                                { "Final Memoria:", null },
+                                                { "PC:", null },
+                                                { "IR:", null },
+                                                { "AC:", null },
+                                                { "AX:", null },
+                                                { "BX", null },
+                                                { "CX:", null },
+                                                { "DX:", null },
+                                                { "AH:", null },
+                                                { "AL:", null },
+                                                { "Lista Archivos:", null },
+                                                { "CPU Asignada:", null },
+                                                { "Tiempo Llegada:", null },
+                                                { "Tiempo Inicio:", null },
+                                                { "Tiempo Finalizaci\u00f3n:", null },
+                                                { "Duraci\u00f3n Estimada:", null },
+                                                { "Proximo Proceso:", null },
+                                                { "Pila (0):", null },
+                                                { "Pila (1):", null },
+                                                { "Pila (2):", null },
+                                                { "Pila (3):", null },
+                                                { "Pila (4):", null }
+                                },
+                                new String[] {
+                                                "Dato", "Valor"
+                                }));
+                jScrollPane2.setViewportView(Tabla_BCP);
 
-        Tabla_Memoria.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
+                Tabla_Memoria.setModel(new javax.swing.table.DefaultTableModel(
+                                new Object[][] {
 
-            },
-            new String [] {
-                "Posicion", "Valor"
-            }
-        ) {
-            Class[] types = new Class [] {
-                java.lang.String.class, java.lang.String.class
-            };
+                                },
+                                new String[] {
+                                                "Posicion", "Valor"
+                                }) {
+                        Class[] types = new Class[] {
+                                        java.lang.String.class, java.lang.String.class
+                        };
 
-            public Class getColumnClass(int columnIndex) {
-                return types [columnIndex];
-            }
-        });
-        jScrollPane3.setViewportView(Tabla_Memoria);
+                        public Class getColumnClass(int columnIndex) {
+                                return types[columnIndex];
+                        }
+                });
+                jScrollPane3.setViewportView(Tabla_Memoria);
 
-        Tabla_Almacenamiento.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
+                Tabla_Almacenamiento.setModel(new javax.swing.table.DefaultTableModel(
+                                new Object[][] {
 
-            },
-            new String [] {
-                "Posicion", "Valor"
-            }
-        ));
-        jScrollPane4.setViewportView(Tabla_Almacenamiento);
+                                },
+                                new String[] {
+                                                "Posicion", "Valor"
+                                }));
+                jScrollPane4.setViewportView(Tabla_Almacenamiento);
 
-        Lista_Procesos_Label.setText("Lista de procesos");
+                Lista_Procesos_Label.setText("Lista de procesos");
 
-        BCP_Label.setText("BCP");
+                BCP_Label.setText("BCP");
 
-        Memoria_Label.setText("Memoria");
+                Memoria_Label.setText("Memoria");
 
-        Almacenamiento_Label.setText("Almacenamiento");
+                Almacenamiento_Label.setText("Almacenamiento");
 
-        terminal_Text_Area.setColumns(20);
-        terminal_Text_Area.setRows(5);
-        jScrollPane5.setViewportView(terminal_Text_Area);
+                terminal_Text_Area.setColumns(20);
+                terminal_Text_Area.setRows(5);
+                jScrollPane5.setViewportView(terminal_Text_Area);
 
-        Terminal_Text_Area_Label.setText("Terminal");
+                Terminal_Text_Area_Label.setText("Terminal");
 
-        Tabla_Estadisticas.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
+                Tabla_Estadisticas.setModel(new javax.swing.table.DefaultTableModel(
+                                new Object[][] {
 
-            },
-            new String [] {
-                "PID", "Inicio", "Finalizaci\u00f3n", "Diferencia"
-            }
-        ));
-        jScrollPane6.setViewportView(Tabla_Estadisticas);
+                                },
+                                new String[] {
+                                                "PID", "Inicio", "Finalizaci\u00f3n", "Diferencia"
+                                }));
+                jScrollPane6.setViewportView(Tabla_Estadisticas);
 
-        jLabel1.setFont(new java.awt.Font("Segoe UI", 0, 36));
-        jLabel1.setText("Sistema Operativo V1");
+                jLabel1.setFont(new java.awt.Font("Segoe UI", 0, 36));
+                jLabel1.setText("Sistema Operativo V1");
 
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(14, 14, 14)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 207, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(37, 37, 37)
-                                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 201, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(30, 30, 30)
-                                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 198, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(32, 32, 32)
-                                .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 203, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(51, 51, 51)
-                                .addComponent(jScrollPane5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addComponent(Cargar_Archivos_BTN)
-                            .addGroup(layout.createSequentialGroup()
-                                .addGap(55, 55, 55)
-                                .addComponent(Lista_Procesos_Label)
-                                .addGap(177, 177, 177)
-                                .addComponent(BCP_Label)
-                                .addGap(199, 199, 199)
-                                .addComponent(Memoria_Label)
-                                .addGap(170, 170, 170)
-                                .addComponent(Almacenamiento_Label)
-                                .addGap(187, 187, 187)
-                                .addComponent(Terminal_Text_Area_Label))
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(Ejecutar_BTN)
-                                .addGap(32, 32, 32)
-                                .addComponent(Paso_A_Paso_BTN)
-                                .addGap(18, 18, 18)
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addGroup(layout.createSequentialGroup()
-                                        .addComponent(Limpiar_BTN)
-                                        .addGap(18, 18, 18)
-                                        .addComponent(Estadisticas_BTN))
-                                    .addComponent(jScrollPane6, javax.swing.GroupLayout.PREFERRED_SIZE, 771, javax.swing.GroupLayout.PREFERRED_SIZE)))))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(421, 421, 421)
-                        .addComponent(jLabel1)))
-                .addContainerGap(52, Short.MAX_VALUE))
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGap(21, 21, 21)
-                .addComponent(jLabel1)
-                .addGap(35, 35, 35)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(Ejecutar_BTN)
-                    .addComponent(Paso_A_Paso_BTN)
-                    .addComponent(Limpiar_BTN)
-                    .addComponent(Estadisticas_BTN))
-                .addGap(28, 28, 28)
-                .addComponent(Cargar_Archivos_BTN)
-                .addGap(29, 29, 29)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(Lista_Procesos_Label)
-                    .addComponent(BCP_Label)
-                    .addComponent(Memoria_Label)
-                    .addComponent(Almacenamiento_Label)
-                    .addComponent(Terminal_Text_Area_Label))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane5, javax.swing.GroupLayout.PREFERRED_SIZE, 247, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                        .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 289, Short.MAX_VALUE)
-                        .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 289, Short.MAX_VALUE)
-                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)))
-                .addGap(18, 18, 18)
-                .addComponent(jScrollPane6, javax.swing.GroupLayout.PREFERRED_SIZE, 244, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(157, Short.MAX_VALUE))
-        );
+                javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+                getContentPane().setLayout(layout);
+                layout.setHorizontalGroup(
+                                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                                .addGroup(layout.createSequentialGroup()
+                                                                .addGroup(layout.createParallelGroup(
+                                                                                javax.swing.GroupLayout.Alignment.LEADING)
+                                                                                .addGroup(layout.createSequentialGroup()
+                                                                                                .addGap(14, 14, 14)
+                                                                                                .addGroup(layout.createParallelGroup(
+                                                                                                                javax.swing.GroupLayout.Alignment.LEADING)
+                                                                                                                .addGroup(layout.createSequentialGroup()
+                                                                                                                                .addComponent(jScrollPane1,
+                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                                                                                207,
+                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                                                                                                .addGap(37, 37, 37)
+                                                                                                                                .addComponent(jScrollPane2,
+                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                                                                                201,
+                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                                                                                                .addGap(30, 30, 30)
+                                                                                                                                .addComponent(jScrollPane3,
+                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                                                                                198,
+                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                                                                                                .addGap(32, 32, 32)
+                                                                                                                                .addComponent(jScrollPane4,
+                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                                                                                203,
+                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                                                                                                .addGap(51, 51, 51)
+                                                                                                                                .addComponent(jScrollPane5,
+                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                                                                                javax.swing.GroupLayout.DEFAULT_SIZE,
+                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE))
+                                                                                                                .addComponent(Cargar_Archivos_BTN)
+                                                                                                                .addGroup(layout.createSequentialGroup()
+                                                                                                                                .addGap(55, 55, 55)
+                                                                                                                                .addComponent(Lista_Procesos_Label)
+                                                                                                                                .addGap(177, 177,
+                                                                                                                                                177)
+                                                                                                                                .addComponent(BCP_Label)
+                                                                                                                                .addGap(199, 199,
+                                                                                                                                                199)
+                                                                                                                                .addComponent(Memoria_Label)
+                                                                                                                                .addGap(170, 170,
+                                                                                                                                                170)
+                                                                                                                                .addComponent(Almacenamiento_Label)
+                                                                                                                                .addGap(187, 187,
+                                                                                                                                                187)
+                                                                                                                                .addComponent(Terminal_Text_Area_Label))
+                                                                                                                .addGroup(layout.createSequentialGroup()
+                                                                                                                                .addComponent(Ejecutar_BTN)
+                                                                                                                                .addGap(32, 32, 32)
+                                                                                                                                .addComponent(Paso_A_Paso_BTN)
+                                                                                                                                .addGap(18, 18, 18)
+                                                                                                                                .addGroup(layout.createParallelGroup(
+                                                                                                                                                javax.swing.GroupLayout.Alignment.LEADING)
+                                                                                                                                                .addGroup(layout.createSequentialGroup()
+                                                                                                                                                                .addComponent(Limpiar_BTN)
+                                                                                                                                                                .addGap(18, 18, 18)
+                                                                                                                                                                .addComponent(Estadisticas_BTN))
+                                                                                                                                                .addComponent(jScrollPane6,
+                                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                                                                                                771,
+                                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)))))
+                                                                                .addGroup(layout.createSequentialGroup()
+                                                                                                .addGap(421, 421, 421)
+                                                                                                .addComponent(jLabel1)))
+                                                                .addContainerGap(52, Short.MAX_VALUE)));
+                layout.setVerticalGroup(
+                                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                                .addGroup(layout.createSequentialGroup()
+                                                                .addGap(21, 21, 21)
+                                                                .addComponent(jLabel1)
+                                                                .addGap(35, 35, 35)
+                                                                .addGroup(layout.createParallelGroup(
+                                                                                javax.swing.GroupLayout.Alignment.BASELINE)
+                                                                                .addComponent(Ejecutar_BTN)
+                                                                                .addComponent(Paso_A_Paso_BTN)
+                                                                                .addComponent(Limpiar_BTN)
+                                                                                .addComponent(Estadisticas_BTN))
+                                                                .addGap(28, 28, 28)
+                                                                .addComponent(Cargar_Archivos_BTN)
+                                                                .addGap(29, 29, 29)
+                                                                .addGroup(layout.createParallelGroup(
+                                                                                javax.swing.GroupLayout.Alignment.BASELINE)
+                                                                                .addComponent(Lista_Procesos_Label)
+                                                                                .addComponent(BCP_Label)
+                                                                                .addComponent(Memoria_Label)
+                                                                                .addComponent(Almacenamiento_Label)
+                                                                                .addComponent(Terminal_Text_Area_Label))
+                                                                .addPreferredGap(
+                                                                                javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                                                .addGroup(layout.createParallelGroup(
+                                                                                javax.swing.GroupLayout.Alignment.LEADING)
+                                                                                .addComponent(jScrollPane5,
+                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                                247,
+                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                                                .addGroup(layout.createParallelGroup(
+                                                                                                javax.swing.GroupLayout.Alignment.LEADING,
+                                                                                                false)
+                                                                                                .addComponent(jScrollPane4,
+                                                                                                                javax.swing.GroupLayout.DEFAULT_SIZE,
+                                                                                                                289,
+                                                                                                                Short.MAX_VALUE)
+                                                                                                .addComponent(jScrollPane3,
+                                                                                                                javax.swing.GroupLayout.DEFAULT_SIZE,
+                                                                                                                289,
+                                                                                                                Short.MAX_VALUE)
+                                                                                                .addComponent(jScrollPane2,
+                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                                                0,
+                                                                                                                Short.MAX_VALUE)
+                                                                                                .addComponent(jScrollPane1,
+                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                                                0,
+                                                                                                                Short.MAX_VALUE)))
+                                                                .addGap(18, 18, 18)
+                                                                .addComponent(jScrollPane6,
+                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                244,
+                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                                .addContainerGap(157, Short.MAX_VALUE)));
 
-        pack();
-    }
+                pack();
+        }
 
         private void Ejecutar_BTNActionPerformed(java.awt.event.ActionEvent evt) {
 
@@ -670,27 +712,27 @@ public class Ventana_Principal extends javax.swing.JFrame {
                 java.awt.EventQueue.invokeLater(() -> new Ventana_Principal().setVisible(true));
         }
 
-    private javax.swing.JLabel Almacenamiento_Label;
-    private javax.swing.JLabel BCP_Label;
-    private javax.swing.JButton Cargar_Archivos_BTN;
-    private javax.swing.JButton Ejecutar_BTN;
-    private javax.swing.JButton Estadisticas_BTN;
-    private javax.swing.JButton Limpiar_BTN;
-    private javax.swing.JLabel Lista_Procesos_Label;
-    private javax.swing.JLabel Memoria_Label;
-    private javax.swing.JButton Paso_A_Paso_BTN;
-    private javax.swing.JTable Tabla_Almacenamiento;
-    private javax.swing.JTable Tabla_BCP;
-    private javax.swing.JTable Tabla_Estadisticas;
-    private javax.swing.JTable Tabla_Memoria;
-    private javax.swing.JTable Tabla_Procesos;
-    private javax.swing.JLabel Terminal_Text_Area_Label;
-    private javax.swing.JLabel jLabel1;
-    private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane2;
-    private javax.swing.JScrollPane jScrollPane3;
-    private javax.swing.JScrollPane jScrollPane4;
-    private javax.swing.JScrollPane jScrollPane5;
-    private javax.swing.JScrollPane jScrollPane6;
-    private javax.swing.JTextArea terminal_Text_Area;
+        private javax.swing.JLabel Almacenamiento_Label;
+        private javax.swing.JLabel BCP_Label;
+        private javax.swing.JButton Cargar_Archivos_BTN;
+        private javax.swing.JButton Ejecutar_BTN;
+        private javax.swing.JButton Estadisticas_BTN;
+        private javax.swing.JButton Limpiar_BTN;
+        private javax.swing.JLabel Lista_Procesos_Label;
+        private javax.swing.JLabel Memoria_Label;
+        private javax.swing.JButton Paso_A_Paso_BTN;
+        private javax.swing.JTable Tabla_Almacenamiento;
+        private javax.swing.JTable Tabla_BCP;
+        private javax.swing.JTable Tabla_Estadisticas;
+        private javax.swing.JTable Tabla_Memoria;
+        private javax.swing.JTable Tabla_Procesos;
+        private javax.swing.JLabel Terminal_Text_Area_Label;
+        private javax.swing.JLabel jLabel1;
+        private javax.swing.JScrollPane jScrollPane1;
+        private javax.swing.JScrollPane jScrollPane2;
+        private javax.swing.JScrollPane jScrollPane3;
+        private javax.swing.JScrollPane jScrollPane4;
+        private javax.swing.JScrollPane jScrollPane5;
+        private javax.swing.JScrollPane jScrollPane6;
+        private javax.swing.JTextArea terminal_Text_Area;
 }

@@ -12,7 +12,7 @@ import java.io.BufferedReader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import config.Configuracion;
+import Config.Configuracion;
 
 import java.io.InputStream;
 

@@ -23,10 +23,21 @@ public class GestorMemoria {
         this.Disco = pDisco;
     }
 
-    public void set_Memoria(Memoria pMemoria) { this.Memoria_RAM = pMemoria; }
-    public Memoria get_Memoria() { return this.Memoria_RAM; }
-    public int get_Nuevo_PID() { return Memoria_RAM.asignar_Nuevo_PID_Proceso(); }
-    public int get_Pos_Actual_MV() { return Disco.getPosicion_Memoria_Virtual(); }
+    public void set_Memoria(Memoria pMemoria) {
+        this.Memoria_RAM = pMemoria;
+    }
+
+    public Memoria get_Memoria() {
+        return this.Memoria_RAM;
+    }
+
+    public int get_Nuevo_PID() {
+        return Memoria_RAM.asignar_Nuevo_PID_Proceso();
+    }
+
+    public int get_Pos_Actual_MV() {
+        return Disco.getPosicion_Memoria_Virtual();
+    }
 
     public int asignar_Memoria_Programa(Codigo_ASM codigoASM) {
         int tamano = codigoASM.getContador_Intrucciones();
@@ -98,8 +109,11 @@ public class GestorMemoria {
     }
 
     public int validar_Espacio_Disponible_Usuario(int tamano) {
-        if (this.Memoria_RAM.getEspacio_Usado_Usuario() + tamano <= this.Memoria_RAM.getEspacio_Usuario()) { return 1; }
-        else if (this.Disco.getEspacio_Usado_Memoria_Virtual() + tamano <= this.Disco.getEspacio_Memoria_Virtual()) { return 2; }
+        if (this.Memoria_RAM.getEspacio_Usado_Usuario() + tamano <= this.Memoria_RAM.getEspacio_Usuario()) {
+            return 1;
+        } else if (this.Disco.getEspacio_Usado_Memoria_Virtual() + tamano <= this.Disco.getEspacio_Memoria_Virtual()) {
+            return 2;
+        }
         return 0;
     }
 
@@ -152,9 +166,14 @@ public class GestorMemoria {
         int pos = posicionLiberada + 1;
         while (pos <= finUsuario) {
             String valor = Memoria_RAM.getMemoria_Principal().get(pos);
-            if (valor == null || valor.trim().isEmpty()) { break; }
+            if (valor == null || valor.trim().isEmpty()) {
+                break;
+            }
             BCP bcp = Memoria_RAM.obtener_Datos_BCP_Pos_Inicio(pos);
-            if (bcp == null) { pos++; continue; }
+            if (bcp == null) {
+                pos++;
+                continue;
+            }
             int memInit = Integer.parseInt(bcp.getMem_Init());
             int memEnd = Integer.parseInt(bcp.getMem_End());
             int tam = memEnd - memInit + 1;
@@ -194,7 +213,9 @@ public class GestorMemoria {
                     }
                     posicionLiberada = newStart + tam - 1;
                     pos = posicionLiberada + 1;
-                } else { pos = memEnd + 1; }
+                } else {
+                    pos = memEnd + 1;
+                }
             }
         }
         int totalInstr = contarInstruccionesValidas();
@@ -211,9 +232,14 @@ public class GestorMemoria {
             boolean bloqueVacio = true;
             for (int j = 0; j < TAMANO_BCP; j++) {
                 String val = Memoria_RAM.getMemoria_Principal().get(pos + j);
-                if (val != null && !val.trim().isEmpty()) { bloqueVacio = false; break; }
+                if (val != null && !val.trim().isEmpty()) {
+                    bloqueVacio = false;
+                    break;
+                }
             }
-            if (!bloqueVacio) { contador++; }
+            if (!bloqueVacio) {
+                contador++;
+            }
         }
         return contador;
     }
@@ -224,7 +250,9 @@ public class GestorMemoria {
         int finUsuario = Memoria_RAM.getEspacio_Total();
         for (int i = inicioUsuario; i < finUsuario; i++) {
             String val = Memoria_RAM.getMemoria_Principal().get(i);
-            if (val != null && !val.trim().isEmpty()) { contador++; }
+            if (val != null && !val.trim().isEmpty()) {
+                contador++;
+            }
         }
         return contador;
     }
@@ -235,17 +263,23 @@ public class GestorMemoria {
         int finVirtual = inicioVirtual + Disco.getEspacio_Memoria_Virtual();
         for (int i = inicioVirtual; i < finVirtual; i++) {
             String val = Disco.getMemoria_Secundaria().get(i);
-            if (val != null && !val.trim().isEmpty()) { contador++; }
+            if (val != null && !val.trim().isEmpty()) {
+                contador++;
+            }
         }
         return contador;
     }
 
     public int comprobar_Finalizacion_Proceso(int pPID) {
         BCP bcp = Memoria_RAM.obtener_Datos_BCP(pPID);
-        if (bcp == null) { return -1; }
+        if (bcp == null) {
+            return -1;
+        }
         int pc = Integer.parseInt(bcp.getPC()) - 1;
         int tam = Integer.parseInt(bcp.getMem_End());
-        if (pc == tam) { return 1; }
+        if (pc == tam) {
+            return 1;
+        }
         return 0;
     }
 
@@ -268,13 +302,16 @@ public class GestorMemoria {
 
     public int crear_Archivo(int pid, String nombreArchivo) {
         System.out.println("Controlador Memoria: Creando archivo: " + nombreArchivo);
-        if (nombreArchivo == null || nombreArchivo.trim().isEmpty()) return -1;
+        if (nombreArchivo == null || nombreArchivo.trim().isEmpty())
+            return -1;
         nombreArchivo = nombreArchivo.trim();
         System.out.println("Control memoria: Pass 1");
         Map<String, List<Integer>> indices = Disco.optener_Indices();
-        if (indices.containsKey(nombreArchivo)) return -1;
+        if (indices.containsKey(nombreArchivo))
+            return -1;
         System.out.println("Control memoria: Pass 2");
-        if (Disco.espacio_Disponible_Programas() == 0) return -1;
+        if (Disco.espacio_Disponible_Programas() == 0)
+            return -1;
         System.out.println("Control memoria: Pass 3");
         int inicio = Disco.getPosicion_Programas();
         Disco.getMemoria_Secundaria().put(inicio, "");
@@ -289,9 +326,11 @@ public class GestorMemoria {
     }
 
     public int abrir_Archivo(int pid, String nombreArchivo) {
-        if (nombreArchivo == null) return -1;
+        if (nombreArchivo == null)
+            return -1;
         Map<String, List<Integer>> indices = Disco.optener_Indices();
-        if (!indices.containsKey(nombreArchivo)) return -1;
+        if (!indices.containsKey(nombreArchivo))
+            return -1;
         List<String> lista = Memoria_RAM.obtener_Lista_Archivos_Proceso(pid);
         if (lista == null || !lista.contains(nombreArchivo)) {
             Memoria_RAM.modificar_Lista_Archivos_BCP(pid, nombreArchivo);
@@ -301,7 +340,8 @@ public class GestorMemoria {
 
     public String leer_Archivo(int pid, String nombreArchivo) {
         Map<String, List<Integer>> indices = Disco.optener_Indices();
-        if (!indices.containsKey(nombreArchivo)) return null;
+        if (!indices.containsKey(nombreArchivo))
+            return null;
         List<Integer> pos = indices.get(nombreArchivo);
         int inicio = pos.get(0);
         String valor = Disco.optener_Instruccion(inicio);
@@ -309,13 +349,16 @@ public class GestorMemoria {
     }
 
     public int escribir_Archivo(int pid, String nombreArchivo, String dato) {
-        if (dato == null) dato = "";
+        if (dato == null)
+            dato = "";
         Map<String, List<Integer>> indices = Disco.optener_Indices();
-        if (!indices.containsKey(nombreArchivo)) return -1;
+        if (!indices.containsKey(nombreArchivo))
+            return -1;
         List<Integer> pos = indices.get(nombreArchivo);
         int inicio = pos.get(0);
         String actual = Disco.optener_Instruccion(inicio);
-        if (actual == null) actual = "";
+        if (actual == null)
+            actual = "";
         String nuevo = actual + dato;
         Disco.modificar_valor_en_memoria(inicio, nuevo);
         return 0;
@@ -323,7 +366,8 @@ public class GestorMemoria {
 
     public int eliminar_Archivo(int pid, String nombreArchivo) {
         Map<String, List<Integer>> indices = Disco.optener_Indices();
-        if (!indices.containsKey(nombreArchivo)) return -1;
+        if (!indices.containsKey(nombreArchivo))
+            return -1;
         List<Integer> pos = indices.get(nombreArchivo);
         int inicio = pos.get(0);
         Disco.getMemoria_Secundaria().put(inicio, "");
@@ -334,16 +378,22 @@ public class GestorMemoria {
 
     public int quitarArchivoDeBCP(int pid, String nombreArchivo) {
         int posBCP = Memoria_RAM.buscar_Posicion_BCP(pid);
-        if (posBCP == -1) return -1;
+        if (posBCP == -1)
+            return -1;
         String lista = Memoria_RAM.obtener_Instruccion(posBCP + 12);
-        if (lista == null || lista.equals("NONE")) return -1;
+        if (lista == null || lista.equals("NONE"))
+            return -1;
         String[] partes = lista.split(",");
         StringBuilder sb = new StringBuilder();
         boolean encontrado = false;
         for (String p : partes) {
             String t = p.trim();
-            if (t.equals(nombreArchivo)) { encontrado = true; continue; }
-            if (sb.length() > 0) sb.append(", ");
+            if (t.equals(nombreArchivo)) {
+                encontrado = true;
+                continue;
+            }
+            if (sb.length() > 0)
+                sb.append(", ");
             sb.append(t);
         }
         String nueva = sb.length() == 0 ? "NONE" : sb.toString();
