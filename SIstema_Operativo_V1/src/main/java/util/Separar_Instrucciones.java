@@ -11,7 +11,15 @@ public class Separar_Instrucciones {
 
         String linea = pLinea.trim();
 
+        System.out.println("[DEBUG PARSER] Intentando separar la instrucción: '" + linea + "'");
+
         if (linea.isEmpty()) {
+            System.out.println("[DEBUG PARSER] Línea vacía — ¿se omitió correctamente en la carga?");
+            return null;
+        }
+
+        if (linea.startsWith(";")) {
+            System.out.println("[DEBUG PARSER] Línea identificada como comentario — ¿se omitió correctamente?");
             return null;
         }
 

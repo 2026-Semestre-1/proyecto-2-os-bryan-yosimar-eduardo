@@ -77,7 +77,9 @@ public class CPU {
     public void setProceso_Finalizado(boolean proceso_Finalizado) { this.proceso_Finalizado = proceso_Finalizado; }
 
     public boolean ejecutar_Siguiente_Instruccion() {
+        System.out.println("[DEBUG CPU] Leyendo línea en PC = " + PC);
         String instruccion = leer_Memoria(PC);
+        System.out.println("[DEBUG CPU] Contenido crudo obtenido: '" + instruccion + "'");
         if (instruccion == null || instruccion.trim().isEmpty()) { return false; }
         IR = instruccion.trim();
         List<String> instr = Separar_Instrucciones.separar_Instrucciones(IR);
@@ -86,6 +88,7 @@ public class CPU {
         if (instr.size() == 2) { operando1 = instr.get(1); }
         if (instr.size() == 3) { operando1 = instr.get(1); operando2 = instr.get(2); }
         if (instr.size() == 4) { operando1 = instr.get(1); operando2 = instr.get(2); operando3 = instr.get(3); }
+        System.out.println("[DEBUG EXECUTE] Evaluando Opcode: '" + opcode + "' con args: '" + operando1 + "', '" + operando2 + "', '" + operando3 + "'");
         switch (opcode.toUpperCase()) {
             case "LOAD": ejecutar_LOAD(operando1); this.PC++; break;
             case "STORE": ejecutar_STORE(operando1); this.PC++; break;

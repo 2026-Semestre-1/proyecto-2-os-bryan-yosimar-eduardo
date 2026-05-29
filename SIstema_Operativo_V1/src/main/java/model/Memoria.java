@@ -19,7 +19,9 @@ public class Memoria {
 
     public Memoria(int pTamano_Memoria) {
         this.Memoria_Principal = new HashMap<>(pTamano_Memoria);
-        this.espacio_Total = pTamano_Memoria; this.espacio_OS = (int) (pTamano_Memoria * 0.2);
+        this.espacio_Total = pTamano_Memoria;
+        int minOS = 5 * TAMANO_BCP;
+        this.espacio_OS = Math.max((int) (pTamano_Memoria * 0.2), minOS);
         this.espacio_Usuario = pTamano_Memoria - this.espacio_OS; this.posicion_Actual_Usuario = this.espacio_OS;
     }
 
@@ -82,6 +84,9 @@ public class Memoria {
         for (int i = 0; i < 5; i++) { Memoria_Principal.put(posicion_Actual_OS + 19 + i, ""); }
         Memoria_Principal.put(posicion_Actual_OS + 24, "0"); Memoria_Principal.put(posicion_Actual_OS + 25, "0");
         this.posicion_Actual_OS += 26; this.espacio_Usado_OS += 26;
+        System.out.println("[DEBUG BCP] PID=" + pid + " creado | pos_OS=" + (posicion_Actual_OS - 26)
+                + " usado_OS=" + espacio_Usado_OS + " max_OS=" + espacio_OS
+                + " pos_User=" + posicion_Actual_Usuario + " usado_User=" + espacio_Usado_Usuario);
         return pid;
     }
 
@@ -175,7 +180,12 @@ public class Memoria {
 
     public Integer validar_Salto_Programa(Integer pPosicion_Destino, int pPID_Actual) { int posicion_BCP = buscar_Posicion_BCP(pPID_Actual); if (posicion_BCP == -1) { return null; } int mem_init = Integer.parseInt(Memoria_Principal.get(posicion_BCP + 3)); int mem_end = Integer.parseInt(Memoria_Principal.get(posicion_BCP + 4)); if (pPosicion_Destino < mem_init) { return 1; } else if (pPosicion_Destino > mem_end) { return 2; } else { return 0; } }
 
-    public int validar_Espacio_Disponible_OS(int pEspacio_Necesario) { if (espacio_Usado_OS + pEspacio_Necesario <= espacio_OS) { return 0; } else { return 1; } }
+    public int validar_Espacio_Disponible_OS(int pEspacio_Necesario) {
+        int resultado = (espacio_Usado_OS + pEspacio_Necesario <= espacio_OS) ? 0 : 1;
+        System.out.println("[DEBUG OS] usado=" + espacio_Usado_OS + " necesita=" + pEspacio_Necesario
+                + " max=" + espacio_OS + " => " + (resultado == 0 ? "OK" : "FULL"));
+        return resultado;
+    }
     public int validar_Espacio_Disponible_Usuario(int pEspacio_Necesario) { if (espacio_Usado_Usuario + pEspacio_Necesario <= espacio_Usuario) { return 0; } else { return 1; } }
 
     public void mostrar_Memoria() { System.out.println("Mostrando memoria.\n"); for (Map.Entry<Integer, String> entry : Memoria_Principal.entrySet()) { System.out.println("Posicion: " + entry.getKey() + " -> Instruccion: " + entry.getValue()); } }

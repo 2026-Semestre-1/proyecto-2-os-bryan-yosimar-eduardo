@@ -2,7 +2,6 @@ package kernel;
 
 import model.Instruccion;
 import model.Codigo_ASM;
-import config.Configuracion;
 import util.Validar_Formato_ASM;
 
 import java.io.FileReader;
@@ -12,7 +11,10 @@ import java.util.List;
 import java.io.BufferedReader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.File;
+
+import config.Configuracion;
+
+import java.io.InputStream;
 
 public class GestorArchivos {
 
@@ -28,7 +30,11 @@ public class GestorArchivos {
 
             while ((linea = contenido.readLine()) != null) {
                 linea = linea.trim();
-                if (linea.isEmpty()) { continue; }
+                System.out.println("[DEBUG CARGA] Línea leída: '" + linea + "'");
+                if (linea.isEmpty() || linea.startsWith(";")) {
+                    System.out.println("[DEBUG CARGA] Línea vacía o comentario — omitida");
+                    continue;
+                }
 
                 if (!validar_Formato_ASM.validacion_Completa(linea)) {
                     codigo.setHay_errores(true);
@@ -52,10 +58,16 @@ public class GestorArchivos {
 
     }
 
-    public static Configuracion cargarConfiguracion(String rutaArchivo) {
+    public static Configuracion cargarConfiguracion() {
         try {
             ObjectMapper mapper = new ObjectMapper();
-            Configuracion config = mapper.readValue(new File(rutaArchivo), Configuracion.class);
+            InputStream is = GestorArchivos.class.getClassLoader()
+                    .getResourceAsStream("Config/Config_Mem.json");
+            if (is == null) {
+                System.out.println("No se encontro el archivo de configuracion en el classpath.");
+                return null;
+            }
+            Configuracion config = mapper.readValue(is, Configuracion.class);
 
             if (config.getMemoria() < 512 || config.getAlmacenamiento() < 512 || config.getMemoria_Virtual() < 64
                     || config.getCant_CPU() < 1) {

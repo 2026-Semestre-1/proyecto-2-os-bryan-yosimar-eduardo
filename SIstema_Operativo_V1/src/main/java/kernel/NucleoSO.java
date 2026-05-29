@@ -5,12 +5,13 @@ import model.Almacenamiento;
 import model.BCP;
 import model.CPU;
 import model.Codigo_ASM;
-import config.Configuracion;
 import dto.SnapshotSistema;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import config.Configuracion;
 
 public class NucleoSO {
     private Memoria memoria = null;
@@ -28,9 +29,7 @@ public class NucleoSO {
     }
 
     public int cargar_configuracion() {
-        Configuracion config = GestorArchivos
-                .cargarConfiguracion(
-                        "C:\\Users\\edurg\\OneDrive\\Escritorio\\Proyecto_1\\PC\\proyecto-1-Eduardo1105rg\\SIstema_Operativo_V1\\src\\main\\java\\Config\\Config_Mem.json");
+        Configuracion config = GestorArchivos.cargarConfiguracion();
         if (config == null) { return 1; }
         crear_almacenamiento(config.getAlmacenamiento(), config.getMemoria_Virtual(), 20);
         crear_memoria(config.getMemoria());
@@ -71,6 +70,11 @@ public class NucleoSO {
         this.planificador.extraer_Programas_Almacenamiento(almacenamiento);
         this.planificador.FSFS_Planificador(memoria, almacenamiento, cpu1.getTiempo_CPU());
         this.planificador.cambiar_Estado_Proceso_Nuevo();
+        System.out.println("[DEBUG CARGA] Archivo=" + pNombre_Archivo
+                + " | cola_Nuevos=" + this.planificador.getCola_Procesos_Nuevos().size()
+                + " | pendientes=" + this.planificador.getCola_Programas_Pendientes().size()
+                + " | OS usado=" + memoria.getEspacio_Usado_OS()
+                + "/" + memoria.getEspacio_OS());
         if (programa_Iniciado == false) {
             int inicio = this.planificador.get_PID_Primer_Proceso_Nuevo();
             if (inicio != -1) { iniciar_Despachador(inicio); }
@@ -200,6 +204,16 @@ public class NucleoSO {
     public void activar_Espera() { this.cpu1.set_Espera(3); }
 
     public SnapshotSistema tomarSnapshot() {
+        if (cpu1 == null || memoria == null) {
+            return new SnapshotSistema(
+                memoria,
+                almacenamiento,
+                new java.util.HashMap<>(),
+                null,
+                new java.util.ArrayList<>(),
+                this.hay_interrupcion
+            );
+        }
         return new SnapshotSistema(
             memoria,
             almacenamiento,

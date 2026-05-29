@@ -123,6 +123,7 @@ public class Planificador {
                 estado = "En Ejecuccion";
                 count_Iteraciones++;
             }
+            System.out.println("[DEBUG ESTADO] PID=" + bcp.getPID() + " (" + bcp.getNombre_Programa() + ") -> " + estado);
             bcp.setEstado(estado);
             this.controlador_Memoria.actualizar_Estado_BCP(bcp.getPID(), estado);
         }
@@ -166,11 +167,19 @@ public class Planificador {
             Codigo_ASM codigo = this.obtener_Programa_Almacenamiento(pMemoria_Secundaria, nombre_Programa);
             System.out.println("Planificador: Codigo del programa: " + codigo.getContador_Intrucciones());
             int espacio_Necesario_Programa = codigo.getContador_Intrucciones();
-            int espacio_Necesario_BCP = 24;
+            int espacio_Necesario_BCP = 26;
             int hay_esoacio_OS = this.controlador_Memoria
                     .validar_Espacio_Disponible_Usuario(espacio_Necesario_Programa);
-            if (pMemoria_Principal.validar_Espacio_Disponible_OS(espacio_Necesario_BCP) == 0
-                    && hay_esoacio_OS != 0) {
+            int osCheck = pMemoria_Principal.validar_Espacio_Disponible_OS(espacio_Necesario_BCP);
+            System.out.println("[DEBUG FSFS] i=" + i + " prog=" + nombre_Programa
+                    + " | OS usado=" + pMemoria_Principal.getEspacio_Usado_OS()
+                    + " OS max=" + pMemoria_Principal.getEspacio_OS()
+                    + " necesita=" + espacio_Necesario_BCP
+                    + " | User usado=" + pMemoria_Principal.getEspacio_Usado_Usuario()
+                    + " User max=" + pMemoria_Principal.getEspacio_Usuario()
+                    + " necesitaProg=" + espacio_Necesario_Programa
+                    + " | osCheck=" + osCheck + " userCheck=" + hay_esoacio_OS);
+            if (osCheck == 0 && hay_esoacio_OS != 0) {
                 System.out.println("Planificador: PASS 1");
                 int pid = pMemoria_Principal.asignar_Nuevo_PID_Proceso();
                 System.out.println("Planificador: PASS 2");
