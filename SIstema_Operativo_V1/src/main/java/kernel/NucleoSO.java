@@ -1,6 +1,7 @@
 package kernel;
 
 import model.Memoria;
+import model.MemoriaPaginada;
 import model.Almacenamiento;
 import model.BCP;
 import model.CPU;
@@ -19,13 +20,41 @@ public class NucleoSO {
     private CPU cpu1 = null;
     private Planificador planificador = null;
     private GestorMemoria controlador_Memoria = null;
+    private MemoriaPaginada memoriaPaginada = null;
     private int contador_ciclos = 0;
     private boolean programa_Iniciado = false;
     private boolean hay_interrupcion = false;
 
     public NucleoSO() {
         this.planificador = new Planificador();
-        cargar_configuracion();
+    }
+
+    public void configurarMemoria(String tipoMemoria) {
+        switch(tipoMemoria) {
+            case "Paginacion":
+                Configuracion config = GestorArchivos.cargarConfiguracion();
+                if (config == null) {
+                    System.out.println("Error: No se pudo cargar la configuracion.");
+                    return;
+                }
+                crear_almacenamiento(config.getAlmacenamiento(), config.getMemoria_Virtual(), 20);
+                crear_memoriaParticionada(config.getMemoria());
+                this.controlador_Memoria = new GestorMemoria(memoria, almacenamiento, memoriaPaginada, "Paginacion");
+                this.planificador.setControlador_Memoria(controlador_Memoria);
+                crear_CPU(config.getCant_CPU());
+                break;
+            case "Normal":
+                cargar_configuracion();
+                break;
+        }
+    }
+
+    public void crear_memoriaParticionada(int tamano_memoria) {
+        int cantidadFrames = (int) Math.ceil((double) tamano_memoria / 16);
+        this.memoriaPaginada = new MemoriaPaginada(16, cantidadFrames);
+        this.memoriaPaginada.inicializar();
+        this.memoria = new Memoria(tamano_memoria);
+        this.memoria.soloKernel();
     }
 
     public int cargar_configuracion() {
@@ -41,7 +70,7 @@ public class NucleoSO {
 
     public void crear_memoria(int tamano_memoria) {
         this.memoria = new Memoria(tamano_memoria);
-        this.controlador_Memoria = new GestorMemoria(memoria, almacenamiento);
+        this.controlador_Memoria = new GestorMemoria(memoria, almacenamiento, "Normal");
         this.planificador.setControlador_Memoria(controlador_Memoria);
     }
 

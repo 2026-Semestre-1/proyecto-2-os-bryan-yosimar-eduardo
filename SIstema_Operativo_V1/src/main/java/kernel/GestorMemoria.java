@@ -9,6 +9,8 @@ import model.BCP;
 import model.Codigo_ASM;
 import model.Instruccion;
 import model.Memoria;
+import model.MemoriaPaginada;
+
 
 public class GestorMemoria {
 
@@ -17,11 +19,23 @@ public class GestorMemoria {
 
     private Memoria Memoria_RAM;
     private Almacenamiento Disco;
+    private MemoriaPaginada memoriaPaginada;
+    private String tipoGestionMemoria; 
 
-    public GestorMemoria(Memoria pMemoria, Almacenamiento pDisco) {
+    public GestorMemoria(Memoria pMemoria, Almacenamiento pDisco, String pTipoGestionMemoria) {
         this.Memoria_RAM = pMemoria;
         this.Disco = pDisco;
+        this.tipoGestionMemoria = pTipoGestionMemoria;
     }
+
+    public GestorMemoria(Memoria pMemoria, Almacenamiento pDisco, MemoriaPaginada pMemoriaPaginada, String
+        pTipoGestionMemoria) {
+        this.Memoria_RAM = pMemoria;
+        this.Disco = pDisco;
+        this.memoriaPaginada = pMemoriaPaginada;
+        this.tipoGestionMemoria = pTipoGestionMemoria;
+
+    }    
 
     public void set_Memoria(Memoria pMemoria) {
         this.Memoria_RAM = pMemoria;
@@ -39,36 +53,64 @@ public class GestorMemoria {
         return Disco.getPosicion_Memoria_Virtual();
     }
 
-    public int asignar_Memoria_Programa(Codigo_ASM codigoASM) {
-        int tamano = codigoASM.getContador_Intrucciones();
-        if (this.Memoria_RAM.getEspacio_Usado_Usuario() + tamano <= this.Memoria_RAM.getEspacio_Usuario()) {
-            int pos = this.Memoria_RAM.getPosicion_Actual_Usuario();
-            for (Instruccion instruccion_Actual : codigoASM.getInstrucciones()) {
-                this.Memoria_RAM.getMemoria_Principal().put(pos, instruccion_Actual.get_Intruccion_Completa());
-                pos++;
-            }
-            this.Memoria_RAM.setPosicion_Actual_Usuario(pos);
-            this.Memoria_RAM.setEspacio_Usado_Usuario(this.Memoria_RAM.getEspacio_Usado_Usuario() + tamano);
-            return 0;
-        } else {
-            int pos = this.Disco.getPosicion_Memoria_Virtual();
-            for (Instruccion instruccion_Actual : codigoASM.getInstrucciones()) {
-                this.Disco.getMemoria_Secundaria().put(pos, instruccion_Actual.get_Intruccion_Completa());
-                pos++;
-            }
-            this.Disco.setPosicion_Memoria_Virtual(pos);
-            this.Disco.setEspacio_Usado_Memoria_Virtual(this.Disco.getEspacio_Usado_Memoria_Virtual() + tamano);
-            return 1;
+    public int asignar_Memoria_Programa(Codigo_ASM codigoASM, String nombreProceso) {
+        switch(tipoGestionMemoria) {
+
+            case "Normal":
+                int tamano = codigoASM.getContador_Intrucciones();
+                if (this.Memoria_RAM.getEspacio_Usado_Usuario() + tamano <= this.Memoria_RAM.getEspacio_Usuario()) {
+                    int pos = this.Memoria_RAM.getPosicion_Actual_Usuario();
+                    for (Instruccion instruccion_Actual : codigoASM.getInstrucciones()) {
+                        this.Memoria_RAM.getMemoria_Principal().put(pos, instruccion_Actual.get_Intruccion_Completa());
+                        pos++;
+                    }
+                    this.Memoria_RAM.setPosicion_Actual_Usuario(pos);
+                    this.Memoria_RAM.setEspacio_Usado_Usuario(this.Memoria_RAM.getEspacio_Usado_Usuario() + tamano);
+                    return 0;
+                } else {
+                    int pos = this.Disco.getPosicion_Memoria_Virtual();
+                    for (Instruccion instruccion_Actual : codigoASM.getInstrucciones()) {
+                        this.Disco.getMemoria_Secundaria().put(pos, instruccion_Actual.get_Intruccion_Completa());
+                        pos++;
+                    }
+                    this.Disco.setPosicion_Memoria_Virtual(pos);
+                    this.Disco.setEspacio_Usado_Memoria_Virtual(this.Disco.getEspacio_Usado_Memoria_Virtual() + tamano);
+                    return 1;
+                }
+
+            case "Paginacion":
+                int cantidadPaginas = (int) Math.ceil((double)codigoASM.getContador_Intrucciones() / 16);
+                if (memoriaPaginada.hayFramesDisponibles(cantidadPaginas)) {
+                    memoriaPaginada.asignarProceso(codigoASM, nombreProceso);
+                    return 0;
+                } else {
+                    System.out.println("Gestor Memoria: No hay frames disponibles para asignar el proceso.");
+                    return 1;
+                }
+                
+
         }
+        return 0;
+
+
     }
 
-    public void limpiar_Memoria_Proceso(int pPID, int pPosicion_Final) {
-        List<Integer> posciones = this.liberar_Memoria_Proceso(pPID);
-        int pos_Inicial_Programa = posciones.get(0);
-        int pos_Final_Programa = posciones.get(1);
-        System.out.println("Controlador Memoria: Iniciando compactacion de la memoria hacia la izquierda.");
-        System.out.println("Controlador Memoria: Inciando compactacion del usuario...");
-        int espacio_Total = this.Memoria_RAM.getEspacio_Total();
+
+    public void limpiar_Memoria_Proceso(int pPID, int pPosicion_Final, String nombreProceso) {
+        switch(tipoGestionMemoria) {
+            case "Normal":
+                List<Integer> posciones = this.liberar_Memoria_Proceso(pPID);
+                int pos_Inicial_Programa = posciones.get(0);
+                int pos_Final_Programa = posciones.get(1);
+                System.out.println("Controlador Memoria: Iniciando compactacion de la memoria hacia la izquierda.");
+                System.out.println("Controlador Memoria: Inciando compactacion del usuario...");
+                int espacio_Total = this.Memoria_RAM.getEspacio_Total();
+                break;
+
+            case "Paginacion":
+                memoriaPaginada.liberarProceso(nombreProceso);
+        }
+
     }
 
     public List<Integer> liberar_Memoria_Proceso(int pid) {
@@ -108,11 +150,25 @@ public class GestorMemoria {
         }
     }
 
-    public int validar_Espacio_Disponible_Usuario(int tamano) {
-        if (this.Memoria_RAM.getEspacio_Usado_Usuario() + tamano <= this.Memoria_RAM.getEspacio_Usuario()) {
-            return 1;
-        } else if (this.Disco.getEspacio_Usado_Memoria_Virtual() + tamano <= this.Disco.getEspacio_Memoria_Virtual()) {
-            return 2;
+    public int validar_Espacio_Disponible_Usuario(int tamano, String nombreProceso) {
+        switch (this.tipoGestionMemoria) {
+            case "Normal":
+                if (this.Memoria_RAM.getEspacio_Usado_Usuario() + tamano <= this.Memoria_RAM.getEspacio_Usuario()) {
+                    return 1;
+                } else if (this.Disco.getEspacio_Usado_Memoria_Virtual() + tamano <= this.Disco.getEspacio_Memoria_Virtual()) {
+                    return 2;
+                }
+                return 0;
+
+            case "Paginacion":
+                int cantidadPaginas = (int) Math.ceil((double) tamano / 16);
+                if (memoriaPaginada.hayFramesDisponibles(cantidadPaginas)) {
+                    return 1;
+                } else {
+                    System.out.println("Gestor Memoria: No hay frames disponibles para asignar el proceso.");
+                    return 0;
+                }
+
         }
         return 0;
     }
@@ -292,12 +348,20 @@ public class GestorMemoria {
     }
 
     public String obtener_intruccion_Proceso(int pPosicion) {
-        if (pPosicion < Memoria_RAM.getEspacio_Total()) {
-            return Memoria_RAM.getMemoria_Principal().get(pPosicion);
+        switch(tipoGestionMemoria) {
+            case("Normal"):
+                if (pPosicion < Memoria_RAM.getEspacio_Total()) {
+                    return Memoria_RAM.getMemoria_Principal().get(pPosicion);
+                }
+                int tamano_Total_Ram = this.Memoria_RAM.getEspacio_Total();
+                int pos_Inicial_Real = pPosicion - tamano_Total_Ram;
+                return this.Disco.optener_Instruccion(pos_Inicial_Real);
+
+            case("Paginacion"): 
+                return memoriaPaginada.obtenerInstruccion(pPosicion);
         }
-        int tamano_Total_Ram = this.Memoria_RAM.getEspacio_Total();
-        int pos_Inicial_Real = pPosicion - tamano_Total_Ram;
-        return this.Disco.optener_Instruccion(pos_Inicial_Real);
+        return null;
+
     }
 
     public int crear_Archivo(int pid, String nombreArchivo) {

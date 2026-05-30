@@ -25,11 +25,14 @@ public class Ventana_Principal extends javax.swing.JFrame {
 
         private static NucleoSO nucleo;
 
+        private String modeloGestionMemoria = "Paginacion";
+
         private Boolean bloqueo = false;
 
         public Ventana_Principal() {
                 initComponents();
                 nucleo = new NucleoSO();
+                nucleo.configurarMemoria(modeloGestionMemoria);
                 iniciar_Contenido_Base_tablas();
         }
 

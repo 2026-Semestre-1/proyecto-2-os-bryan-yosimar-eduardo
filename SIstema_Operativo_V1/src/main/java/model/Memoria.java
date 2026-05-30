@@ -426,6 +426,12 @@ public class Memoria {
         }
     }
 
+    public void soloKernel() {
+        for (int i = espacio_OS; i < espacio_Total; i++) {
+            Memoria_Principal.put(i, "");
+        }
+    }
+
     public void mostrar_Memoria() {
         System.out.println("Mostrando memoria.\n");
         for (Map.Entry<Integer, String> entry : Memoria_Principal.entrySet()) {

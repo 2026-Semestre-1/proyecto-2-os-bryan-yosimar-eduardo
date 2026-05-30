@@ -151,7 +151,7 @@ public class Planificador {
         bcp_Proceso.set_momento_finalizacion(LocalTime.now());
         this.eliminar_Proceso_Nuevo(pPID);
         this.agregar_Proceso_Terminado(bcp_Proceso);
-        this.controlador_Memoria.limpiar_Memoria_Proceso(pPID, Integer.parseInt(bcp_Proceso.getMem_End()));
+        this.controlador_Memoria.limpiar_Memoria_Proceso(pPID, Integer.parseInt(bcp_Proceso.getMem_End()), nombre_Programa);
     }
 
     public void cambiar_Estado_Proceso_Nuevo() {
@@ -212,7 +212,7 @@ public class Planificador {
             int espacio_Necesario_Programa = codigo.getContador_Intrucciones();
             int espacio_Necesario_BCP = 26;
             int hay_esoacio_OS = this.controlador_Memoria
-                    .validar_Espacio_Disponible_Usuario(espacio_Necesario_Programa);
+                    .validar_Espacio_Disponible_Usuario(espacio_Necesario_Programa, nombre_Programa);
             int osCheck = pMemoria_Principal.validar_Espacio_Disponible_OS(espacio_Necesario_BCP);
             System.out.println("[DEBUG FSFS] i=" + i + " prog=" + nombre_Programa
                     + " | OS usado=" + pMemoria_Principal.getEspacio_Usado_OS()
@@ -232,7 +232,7 @@ public class Planificador {
                 pMemoria_Principal.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1, pTiempo_Total_CPU,
                         tiempo_Estimado, pos_MV);
                 System.out.println("Planificador: PASS 4");
-                this.controlador_Memoria.asignar_Memoria_Programa(codigo);
+                this.controlador_Memoria.asignar_Memoria_Programa(codigo, nombre_Programa);
                 System.out.println("Planificador: PASS 5");
                 int pid_Siguiente = 0;
                 if (i == 4) {

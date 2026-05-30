@@ -259,6 +259,10 @@ public class BCP {
         return nombre_Programa;
     }
 
+    public int getTamanoProceso() {
+        return espacio_Total_Programa;
+    }
+
     public void setNombre_Programa(String nombre_Programa) {
         this.nombre_Programa = nombre_Programa;
     }

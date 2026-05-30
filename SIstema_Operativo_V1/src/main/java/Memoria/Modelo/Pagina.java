@@ -1,14 +1,16 @@
 package Memoria.Modelo;
+import java.util.List;
+
 
 public class Pagina {
-    String contenido;
+    List<String> contenido;
     int tamano;
     Frame frameAsignado;
     int numPagina;
     
 
 
-    public Pagina (String contenido, int tamano, int numPagina){
+    public Pagina (List<String> contenido, int tamano, int numPagina){
         this.contenido = contenido;
         this.tamano = tamano;
         this.numPagina = numPagina;
@@ -22,4 +24,16 @@ public class Pagina {
     public int getNumPagina() {
         return numPagina;
     }
+
+    public List<String> getContenido() {
+        return contenido;
+    }
+
+    public Frame getFrameAsignado() {
+        return frameAsignado;
+    }
+
+    public int getTamano() {
+        return tamano;
+    }    
 }
