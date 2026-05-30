@@ -21,6 +21,7 @@ public class GestorMemoria {
     private Almacenamiento Disco;
     private MemoriaPaginada memoriaPaginada;
     private String tipoGestionMemoria; 
+    private Controlador_MemoriaParticionada controlador_MemoriaParticionada; 
 
     public GestorMemoria(Memoria pMemoria, Almacenamiento pDisco, String pTipoGestionMemoria) {
         this.Memoria_RAM = pMemoria;
@@ -35,7 +36,15 @@ public class GestorMemoria {
         this.memoriaPaginada = pMemoriaPaginada;
         this.tipoGestionMemoria = pTipoGestionMemoria;
 
-    }    
+    } 
+    
+    public GestorMemoria(Memoria pMemoria, Almacenamiento pDisco, Controlador_MemoriaParticionada pControlador_MemoriaParticionada, 
+        String pTipoGestionMemoria ) {
+        this.Memoria_RAM = pMemoria;
+        this.Disco = pDisco;  
+        this.controlador_MemoriaParticionada =  pControlador_MemoriaParticionada;
+        this.tipoGestionMemoria = pTipoGestionMemoria;        
+        }
 
     public void set_Memoria(Memoria pMemoria) {
         this.Memoria_RAM = pMemoria;
@@ -61,7 +70,7 @@ public class GestorMemoria {
         return Disco.getPosicion_Memoria_Virtual();
     }
 
-    public int asignar_Memoria_Programa(Codigo_ASM codigoASM, String nombreProceso) {
+    public int asignar_Memoria_Programa(Codigo_ASM codigoASM, String nombreProceso, int pID) {
         switch(tipoGestionMemoria) {
 
             case "Normal":
@@ -95,7 +104,11 @@ public class GestorMemoria {
                     System.out.println("Gestor Memoria: No hay frames disponibles para asignar el proceso.");
                     return 1;
                 }
-                
+            case "ParticionIgual":
+                int tamanoproceso = codigoASM.getContador_Intrucciones();
+                controlador_MemoriaParticionada.asignarProcesoEstatico(
+                    codigoASM, pID, nombreProceso, Memoria_RAM);
+                break;
 
         }
         return 0;
@@ -121,6 +134,15 @@ public class GestorMemoria {
                 if (posBCP != -1) {
                     liberar_Memoria_BCP(posBCP);
                 }
+                break;
+
+            case "ParticionIgual":
+                controlador_MemoriaParticionada.liberarProcesoEstatico(pPID, Memoria_RAM);
+                int posBCP2 = this.Memoria_RAM.buscar_Posicion_BCP(pPID);
+                if (posBCP2 != -1) {
+                    liberar_Memoria_BCP(posBCP2);
+                }
+                break;
         }
 
     }
@@ -180,6 +202,12 @@ public class GestorMemoria {
                     System.out.println("Gestor Memoria: No hay frames disponibles para asignar el proceso.");
                     return 0;
                 }
+
+            case "ParticionIgual":
+                if (controlador_MemoriaParticionada.hayParticionesEstaticasLibres(tamano)){
+                    return 1;
+                }
+                return 0;
 
         }
         return 0;
@@ -373,10 +401,19 @@ public class GestorMemoria {
                 int memInit = encontrarMemInit(pPosicion);
                 if (memInit == -1) return null;
                 return memoriaPaginada.obtenerInstruccion(pPosicion, memInit);
+
+            case("ParticionIgual"):
+                return Memoria_RAM.getMemoria_Principal().get(pPosicion);
         }
+
         return null;
 
     }
+
+
+    public int getInicioParticionProceso(int pid) {
+        return controlador_MemoriaParticionada.getInicioParticionPorProceso(pid);
+    }    
 
     private int encontrarMemInit(int posicion) {
         for (int i = POSICION_INICIO_BCP; i < Memoria_RAM.getEspacio_OS(); i += TAMANO_BCP) {

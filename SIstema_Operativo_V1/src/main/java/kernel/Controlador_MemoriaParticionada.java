@@ -1,5 +1,8 @@
-package Controlador;
+package kernel;
 import Memoria.Modelo.Particion;
+import model.Codigo_ASM;
+import model.Instruccion;
+import model.Memoria;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,31 +37,82 @@ public class Controlador_MemoriaParticionada {
         return particiones.size();
     }
 
-    public int asignarProcesoEstatico(int pid, int tamanioProceso, String nombre) {
+    public int asignarProcesoEstatico(Codigo_ASM codigoASM, int pid, String nombre, Memoria memoria) {
         for (Particion particion : particiones) {
-            if (particion.procesoAsignado == -1 && particion.tamano >= tamanioProceso) {
+            if (particion.procesoAsignado == -1 && particion.tamano >= codigoASM.getContador_Intrucciones()) {
                 particion.procesoAsignado = pid;
+                // Escribir instrucciones en RAM en posiciones absolutas
+                int pos = particion.inicio;
+                for (Instruccion inst : codigoASM.getInstrucciones()) {
+                    memoria.getMemoria_Principal().put(pos, inst.get_Intruccion_Completa());
+                    pos++;
+                }
                 System.out.println("Proceso " + nombre + " asignado a Partición " + particion.id);
                 return particion.id;
             }
         }
-        System.out.println("No se pudo asignar el proceso " + nombre + ". No hay partición disponible.");
-        return -1; // No se pudo asignar
+        return -1;
     }
 
-    public int liberarProcesoEstatico(int pid) {
+    /*
+    public String obtenerInstruccionEstaticaIgual(int posicion){
+        for ( Particion particion : particiones) {
+            if (particion.procesoAsignado != -1 && posicion >= particion.inicio && posicion <= particion.fin) {
+                int indiceInstruccion = posicion - particion.inicio;
+                return particion.instrucciones.get(indiceInstruccion);
+            }
+            
+        }
+
+    }
+    */
+
+    public int liberarProcesoEstatico(int pid, Memoria memoria) {
         for (Particion particion : particiones) {
             if (particion.procesoAsignado == pid) {
-                System.out.println("Proceso con PID " + pid + " liberado de Partición " + particion.id);
+                // Limpiar instrucciones en RAM
+                for (int i = particion.inicio; i <= particion.fin; i++) {
+                    memoria.getMemoria_Principal().put(i, "");
+                }
                 particion.procesoAsignado = -1;
+                System.out.println("Proceso con PID " + pid + " liberado de Partición " + particion.id);
                 return particion.id;
             }
         }
-        System.out.println("No se pudo liberar el proceso con PID " + pid + ". No se encontró en ninguna partición.");
-        return -1; // No se pudo liberar
+        return -1;
+    }
+
+    public int getInicioParticion(int idParticion) {
+        return particiones.get(idParticion).inicio;
+    }
+
+    public int getInicioParticionPorProceso(int pid) {
+        for (Particion p : particiones) {
+            if (p.procesoAsignado == pid) {
+                return p.inicio;
+            }
+        }
+        return -1;
     }
 
 
+    public int inicializarParticionesFijasIguales(int inicioMemoria, int tamanioMemoria, int tamanioTotalRAM) {
+        int inicio = inicioMemoria; // Esto donde inicia el usuario
+        int disponible = tamanioMemoria; // Esto seria la memoria disponbible de parte del usuario  
+        int numDivision = 4;
+        int tamanoParticion = disponible / numDivision; // Aqui lo divido en 4 partes iguales pero realmente podemos poner la que queramos
+        for(int i = 0; i < numDivision; i++) {
+            int fin = inicio + tamanoParticion - 1;
+            if(fin > tamanioTotalRAM) {
+                System.out.println("Se sobrepasa el tamaño total de la RAM. No se pueden crear más particiones.");
+                break;
+            }
+            particiones.add(new Particion(i, inicio, fin));
+            System.out.println("Part " + i + ": inicio=" + inicio + " fin=" + fin);
+            inicio = fin + 1;
+        } 
+        return particiones.size();     
+    }
 
 
     public int inicializarParticionesFijasDistribucion(int inicioMemoria, int tamanioMemoria, int tamanioTotalRAM) throws Exception{
@@ -150,7 +204,6 @@ public class Controlador_MemoriaParticionada {
         int idParticion = -1; // En caso de que no encuentre devuelvo -1 
         for (int j = 0; j < particiones.size(); j++) {
             Particion particion = particiones.get(j);
-            Particion particion2 = particiones.get(j+1);
             if (particion.procesoAsignado == -1 && particion.tamano >= tamanoProceso) {
                 if(particion.tamano < i) {
                     i = particion.tamano;
@@ -161,5 +214,14 @@ public class Controlador_MemoriaParticionada {
         }
      return idParticion;
     }   
+
+    public boolean hayParticionesEstaticasLibres(int tamanoProceso) {
+        for(Particion particion : particiones){
+            if (particion.tamano >= tamanoProceso && particion.procesoAsignado == -1){
+                return true;
+            }
+        }
+        return false;
+    }
 
 }

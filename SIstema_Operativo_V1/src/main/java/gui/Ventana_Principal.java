@@ -8,6 +8,7 @@ import model.MemoriaPaginada;
 import dto.SnapshotSistema;
 import Memoria.Modelo.TablaDePagina;
 import Memoria.Modelo.Frame;
+import Memoria.Modelo.Particion;
 
 import java.io.File;
 import java.time.LocalTime;
@@ -200,7 +201,7 @@ public class Ventana_Principal extends javax.swing.JFrame {
                 Selector_Memoria_Label = new javax.swing.JLabel();
                 Selector_Memoria_Label.setText("Gestion de memoria:");
 
-                Selector_Memoria = new JComboBox<>(new String[] { "Normal", "Paginacion" });
+                Selector_Memoria = new JComboBox<>(new String[] { "Normal", "Paginacion", "ParticionIgual" });
                 Selector_Memoria.setSelectedItem(modeloGestionMemoria);
                 Selector_Memoria.addActionListener(evt -> {
                         String seleccion = (String) Selector_Memoria.getSelectedItem();
@@ -253,9 +254,22 @@ public class Ventana_Principal extends javax.swing.JFrame {
                 panelPaginacion.add(panelPaginas);
                 panelPaginacion.add(panelContenido);
 
+                Tabla_Particiones = new javax.swing.JTable();
+                Tabla_Particiones.setModel(new DefaultTableModel(
+                        new Object[][] {},
+                        new String[] { "Particion", "Inicio", "Fin", "Tamano", "Estado", "Proceso" }
+                ));
+                jScrollPane10 = new javax.swing.JScrollPane(Tabla_Particiones);
+                Particiones_Label = new javax.swing.JLabel("Particiones fijas");
+
+                javax.swing.JPanel panelParticiones = new javax.swing.JPanel(new java.awt.BorderLayout());
+                panelParticiones.add(Particiones_Label, java.awt.BorderLayout.NORTH);
+                panelParticiones.add(jScrollPane10, java.awt.BorderLayout.CENTER);
+
                 Seccion_Inferior_Tab = new JTabbedPane();
                 Seccion_Inferior_Tab.addTab("Estadisticas", jScrollPane6);
                 Seccion_Inferior_Tab.addTab("Paginacion", panelPaginacion);
+                Seccion_Inferior_Tab.addTab("Particiones", panelParticiones);
 
                 Tabla_Frames.getSelectionModel().addListSelectionListener(e -> {
                     if (!e.getValueIsAdjusting()) {
@@ -605,6 +619,7 @@ public class Ventana_Principal extends javax.swing.JFrame {
                 actualizar_Tabla_BCP(snap.bcpActual);
                 actualizar_Tabla_Frames(snap.memoriaPaginada);
                 actualizar_Tabla_Paginas(snap.memoriaPaginada);
+                actualizar_Tabla_Particiones(snap.particiones);
         }
 
         public void iniciar_Contenido_Base_tablas() {
@@ -742,6 +757,19 @@ public class Ventana_Principal extends javax.swing.JFrame {
                                 tp.getNombreProceso(),
                                 tp.getNumeroDePagina(),
                                 tp.getNumeroDeFrame()
+                        });
+                }
+        }
+
+        public void actualizar_Tabla_Particiones(List<Particion> particiones) {
+                DefaultTableModel modeloTabla = (DefaultTableModel) Tabla_Particiones.getModel();
+                modeloTabla.setRowCount(0);
+                if (particiones == null) return;
+                for (Particion p : particiones) {
+                        String estado = (p.procesoAsignado == -1) ? "Libre" : "Ocupado";
+                        String proceso = (p.procesoAsignado == -1) ? "" : String.valueOf(p.procesoAsignado);
+                        modeloTabla.addRow(new Object[] {
+                                p.id, p.inicio, p.fin, p.tamano, estado, proceso
                         });
                 }
         }
@@ -927,6 +955,9 @@ public class Ventana_Principal extends javax.swing.JFrame {
         private javax.swing.JScrollPane jScrollPane7;
         private javax.swing.JScrollPane jScrollPane8;
         private javax.swing.JScrollPane jScrollPane9;
+        private javax.swing.JScrollPane jScrollPane10;
+        private javax.swing.JTable Tabla_Particiones;
+        private javax.swing.JLabel Particiones_Label;
         private javax.swing.JTextArea terminal_Text_Area;
         private javax.swing.JTextArea contenido_Text_Area;
         private javax.swing.JLabel Contenido_Label;

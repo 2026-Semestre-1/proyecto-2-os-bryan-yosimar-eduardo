@@ -11,6 +11,9 @@ import dto.SnapshotSistema;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import kernel.Controlador_MemoriaParticionada;
+import Memoria.Modelo.*;
+
 
 import Config.Configuracion;
 
@@ -24,9 +27,11 @@ public class NucleoSO {
     private int contador_ciclos = 0;
     private boolean programa_Iniciado = false;
     private boolean hay_interrupcion = false;
+    private Controlador_MemoriaParticionada controlador_MemoriaParticionada;
 
     public NucleoSO() {
         this.planificador = new Planificador();
+        this.controlador_MemoriaParticionada = new Controlador_MemoriaParticionada();
     }
 
     public void configurarMemoria(String tipoMemoria) {
@@ -51,6 +56,21 @@ public class NucleoSO {
                 this.memoriaPaginada = null;
                 cargar_configuracion();
                 break;
+
+            case "ParticionIgual":
+                this.memoriaPaginada = null;
+                Configuracion config2 = GestorArchivos.cargarConfiguracion();
+                if (config2 == null) {
+                    System.out.println("Error: No se pudo cargar la configuracion.");
+                    return;
+                }
+                crear_almacenamiento(config2.getAlmacenamiento(), config2.getMemoria_Virtual(), 20);   
+                crear_memoriaParticionFijajIgual(config2.getMemoria()); 
+                this.controlador_Memoria = new GestorMemoria(memoria, almacenamiento, controlador_MemoriaParticionada, "ParticionIgual");
+                this.planificador.setControlador_Memoria(controlador_Memoria);
+                crear_CPU(config2.getCant_CPU());              
+                break;                            
+
         }
     }
 
@@ -60,6 +80,17 @@ public class NucleoSO {
         this.memoriaPaginada.inicializar();
         this.memoria = new Memoria(tamano_memoria);
         this.memoria.soloKernel();
+    }
+
+    public void crear_memoriaParticionFijajIgual(int tamanoMemoria) {
+        this.memoria = new Memoria(tamanoMemoria);
+        int posInicioUsuario = memoria.getPosicion_Actual_Usuario();
+        int espacioUsuario = memoria.getEspacio_Usuario();
+        this.memoria.soloKernel();   
+        controlador_MemoriaParticionada.inicializarParticionesFijasIguales(posInicioUsuario,espacioUsuario, tamanoMemoria);  
+
+
+
     }
 
     public int cargar_configuracion() {
@@ -325,6 +356,7 @@ public class NucleoSO {
 
     public SnapshotSistema tomarSnapshot() {
         MemoriaPaginada mp = (controlador_Memoria != null) ? controlador_Memoria.getMemoriaPaginada() : null;
+        List<Particion> particiones = (controlador_MemoriaParticionada != null) ? controlador_MemoriaParticionada.getParticiones() : null;
         if (cpu1 == null || memoria == null) {
             return new SnapshotSistema(
                     memoria,
@@ -333,7 +365,8 @@ public class NucleoSO {
                     null,
                     new java.util.ArrayList<>(),
                     this.hay_interrupcion,
-                    mp);
+                    mp,
+                    particiones);
         }
         return new SnapshotSistema(
                 memoria,
@@ -342,6 +375,7 @@ public class NucleoSO {
                 obtener_Datos_BCP_Actual(),
                 this.planificador.getCola_Procesos_Terminados(),
                 this.hay_interrupcion,
-                mp);
+                mp,
+                particiones);
     }
 }

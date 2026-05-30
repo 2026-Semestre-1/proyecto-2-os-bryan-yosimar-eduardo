@@ -1,5 +1,8 @@
 package Memoria.Modelo;
 
+import java.util.List;
+import java.util.*;
+
 public class Particion {
     public int id;
     public int inicio;

@@ -238,10 +238,18 @@ public class Planificador {
                 }
 
                 int pos_MV = this.controlador_Memoria.get_Pos_Actual_MV();
-                pMemoria_Principal.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1, pTiempo_Total_CPU,
-                        tiempo_Estimado, pos_MV, pcInicial);
+                if ("ParticionIgual".equals(controlador_Memoria.getTipoGestionMemoria())) {
+                    controlador_Memoria.asignar_Memoria_Programa(codigo, nombre_Programa, pid);
+                    pcInicial = controlador_Memoria.getInicioParticionProceso(pid);
+                    pMemoria_Principal.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1, 
+                        pTiempo_Total_CPU, tiempo_Estimado, pos_MV, pcInicial);
+                } else {
+                    // Flujo que estaba antes por aquello
+                    pMemoria_Principal.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1,
+                        pTiempo_Total_CPU, tiempo_Estimado, pos_MV, pcInicial);
+                    controlador_Memoria.asignar_Memoria_Programa(codigo, nombre_Programa, pid);
+                }
                 System.out.println("Planificador: PASS 4");
-                this.controlador_Memoria.asignar_Memoria_Programa(codigo, nombre_Programa);
                 System.out.println("Planificador: PASS 5");
                 int pid_Siguiente = 0;
                 if (i == 4) {

@@ -119,9 +119,9 @@ public class Memoria {
                 Memoria_Principal.put(posicion_Actual_OS + 3, "0");
                 Memoria_Principal.put(posicion_Actual_OS + 4, String.valueOf(pTamano_Proceso - 1));
             } else {
-                Memoria_Principal.put(posicion_Actual_OS + 3, ((Integer) posicion_Actual_Usuario).toString());
+                Memoria_Principal.put(posicion_Actual_OS + 3, String.valueOf(pcInicial));
                 Memoria_Principal.put(posicion_Actual_OS + 4,
-                        ((Integer) (posicion_Actual_Usuario + pTamano_Proceso - 1)).toString());
+                        String.valueOf(pcInicial + pTamano_Proceso - 1));
             }
             Memoria_Principal.put(posicion_Actual_OS + 5, String.valueOf(pcInicial));
         } else {
