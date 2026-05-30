@@ -30,6 +30,10 @@ public class NucleoSO {
     }
 
     public void configurarMemoria(String tipoMemoria) {
+        this.planificador = new Planificador();
+        this.programa_Iniciado = false;
+        this.hay_interrupcion = false;
+        this.contador_ciclos = 0;
         switch(tipoMemoria) {
             case "Paginacion":
                 Configuracion config = GestorArchivos.cargarConfiguracion();
@@ -44,6 +48,7 @@ public class NucleoSO {
                 crear_CPU(config.getCant_CPU());
                 break;
             case "Normal":
+                this.memoriaPaginada = null;
                 cargar_configuracion();
                 break;
         }
@@ -84,6 +89,10 @@ public class NucleoSO {
 
     public Memoria getMemoria() {
         return memoria;
+    }
+
+    public MemoriaPaginada getMemoriaPaginada() {
+        return memoriaPaginada;
     }
 
     public Almacenamiento getAlmacenamiento() {
@@ -315,6 +324,7 @@ public class NucleoSO {
     }
 
     public SnapshotSistema tomarSnapshot() {
+        MemoriaPaginada mp = (controlador_Memoria != null) ? controlador_Memoria.getMemoriaPaginada() : null;
         if (cpu1 == null || memoria == null) {
             return new SnapshotSistema(
                     memoria,
@@ -322,7 +332,8 @@ public class NucleoSO {
                     new java.util.HashMap<>(),
                     null,
                     new java.util.ArrayList<>(),
-                    this.hay_interrupcion);
+                    this.hay_interrupcion,
+                    mp);
         }
         return new SnapshotSistema(
                 memoria,
@@ -330,6 +341,7 @@ public class NucleoSO {
                 this.planificador.obtener_Estado_5_Procesos(),
                 obtener_Datos_BCP_Actual(),
                 this.planificador.getCola_Procesos_Terminados(),
-                this.hay_interrupcion);
+                this.hay_interrupcion,
+                mp);
     }
 }

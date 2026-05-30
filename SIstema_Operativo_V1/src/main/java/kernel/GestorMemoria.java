@@ -45,6 +45,14 @@ public class GestorMemoria {
         return this.Memoria_RAM;
     }
 
+    public MemoriaPaginada getMemoriaPaginada() {
+        return this.memoriaPaginada;
+    }
+
+    public String getTipoGestionMemoria() {
+        return this.tipoGestionMemoria;
+    }
+
     public int get_Nuevo_PID() {
         return Memoria_RAM.asignar_Nuevo_PID_Proceso();
     }
@@ -109,6 +117,10 @@ public class GestorMemoria {
 
             case "Paginacion":
                 memoriaPaginada.liberarProceso(nombreProceso);
+                int posBCP = this.Memoria_RAM.buscar_Posicion_BCP(pPID);
+                if (posBCP != -1) {
+                    liberar_Memoria_BCP(posBCP);
+                }
         }
 
     }
@@ -357,11 +369,35 @@ public class GestorMemoria {
                 int pos_Inicial_Real = pPosicion - tamano_Total_Ram;
                 return this.Disco.optener_Instruccion(pos_Inicial_Real);
 
-            case("Paginacion"): 
-                return memoriaPaginada.obtenerInstruccion(pPosicion);
+            case("Paginacion"):
+                int memInit = encontrarMemInit(pPosicion);
+                if (memInit == -1) return null;
+                return memoriaPaginada.obtenerInstruccion(pPosicion, memInit);
         }
         return null;
 
+    }
+
+    private int encontrarMemInit(int posicion) {
+        for (int i = POSICION_INICIO_BCP; i < Memoria_RAM.getEspacio_OS(); i += TAMANO_BCP) {
+            String pidStr = Memoria_RAM.obtener_Instruccion(i);
+            if (pidStr != null && !pidStr.trim().isEmpty()) {
+                String memInitStr = Memoria_RAM.obtener_Instruccion(i + 3);
+                String memEndStr = Memoria_RAM.obtener_Instruccion(i + 4);
+                if (memInitStr != null && memEndStr != null) {
+                    try {
+                        int memInit = Integer.parseInt(memInitStr.trim());
+                        int memEnd = Integer.parseInt(memEndStr.trim());
+                        if (posicion >= memInit && posicion <= memEnd) {
+                            return memInit;
+                        }
+                    } catch (NumberFormatException e) {
+                        continue;
+                    }
+                }
+            }
+        }
+        return -1;
     }
 
     public int crear_Archivo(int pid, String nombreArchivo) {

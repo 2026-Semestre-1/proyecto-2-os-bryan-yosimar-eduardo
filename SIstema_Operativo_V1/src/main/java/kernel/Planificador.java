@@ -20,6 +20,7 @@ public class Planificador {
     private List<BCP> cola_Procesos_Terminados;
     private GestorMemoria controlador_Memoria;
 
+
     public Planificador() {
         this.cola_Programas_Pendientes = new ArrayList<>();
         this.cola_Procesos_Nuevos = new LinkedHashMap<>();
@@ -137,13 +138,14 @@ public class Planificador {
     }
 
     public void finalizacion_Procesos(Memoria pMemoria_Principal, int pPID, int pTiempo_Finalizacion) {
-        pMemoria_Principal.actualizar_Estado_BCP(pPID, "Terminado");
-        pMemoria_Principal.modificar_Tiempo_Finalizacion_BCP(pPID, pTiempo_Finalizacion);
-        BCP bcp_Proceso = pMemoria_Principal.obtener_Datos_BCP(pPID);
         BCP bcp_Planificador = this.cola_Procesos_Nuevos.get(pPID);
         if (bcp_Planificador == null) {
             System.out.println("Controlador Planificador: El proceso no se encuentra en la cola de procesos nuevos.");
+            return;
         }
+        pMemoria_Principal.actualizar_Estado_BCP(pPID, "Terminado");
+        pMemoria_Principal.modificar_Tiempo_Finalizacion_BCP(pPID, pTiempo_Finalizacion);
+        BCP bcp_Proceso = pMemoria_Principal.obtener_Datos_BCP(pPID);
         String nombre_Programa = bcp_Planificador.getNombre_Programa();
         LocalTime momento_Creacion = bcp_Planificador.get_momento_creacion();
         bcp_Proceso.setNombre_Programa(nombre_Programa);
@@ -228,9 +230,16 @@ public class Planificador {
                 System.out.println("Planificador: PASS 2");
                 int tiempo_Estimado = Calcular_Tiempo_Estimado_Programa.calcular_Tiempo_Estimado(codigo);
                 System.out.println("Planificador: PASS 3 -> Duracion estimada: " + tiempo_Estimado);
+                int pcInicial;
+                if ("Paginacion".equals(controlador_Memoria.getTipoGestionMemoria())) {
+                    pcInicial = 0;
+                } else {
+                    pcInicial = pMemoria_Principal.getPosicion_Actual_Usuario();
+                }
+
                 int pos_MV = this.controlador_Memoria.get_Pos_Actual_MV();
                 pMemoria_Principal.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1, pTiempo_Total_CPU,
-                        tiempo_Estimado, pos_MV);
+                        tiempo_Estimado, pos_MV, pcInicial);
                 System.out.println("Planificador: PASS 4");
                 this.controlador_Memoria.asignar_Memoria_Programa(codigo, nombre_Programa);
                 System.out.println("Planificador: PASS 5");
