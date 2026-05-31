@@ -243,7 +243,15 @@ public class Planificador {
                     pcInicial = controlador_Memoria.getInicioParticionProceso(pid);
                     pMemoria_Principal.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1, 
                         pTiempo_Total_CPU, tiempo_Estimado, pos_MV, pcInicial);
-                } else {
+                } 
+                else if ("ParticionIgualDinamica".equals(controlador_Memoria.getTipoGestionMemoria())){
+                    controlador_Memoria.asignar_Memoria_Programa(codigo, nombre_Programa, pid);
+                    pcInicial = controlador_Memoria.getInicioParticionProceso(pid);
+                    pMemoria_Principal.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1, 
+                        pTiempo_Total_CPU, tiempo_Estimado, pos_MV, pcInicial);                    
+                }
+                
+                else {
                     // Flujo que estaba antes por aquello
                     pMemoria_Principal.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1,
                         pTiempo_Total_CPU, tiempo_Estimado, pos_MV, pcInicial);

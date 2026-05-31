@@ -110,6 +110,11 @@ public class GestorMemoria {
                     codigoASM, pID, nombreProceso, Memoria_RAM);
                 break;
 
+            case "ParticionIgualDinamica":
+                controlador_MemoriaParticionada.asignarProcesoEstaticoDinamico(
+                    codigoASM, pID, nombreProceso, Memoria_RAM);               
+                break;
+
         }
         return 0;
 
@@ -143,6 +148,14 @@ public class GestorMemoria {
                     liberar_Memoria_BCP(posBCP2);
                 }
                 break;
+
+            case "ParticionIgualDinamica":
+                controlador_MemoriaParticionada.liberarProcesoEstaticoDinamico(pPID, Memoria_RAM);
+                int posBCP3 = this.Memoria_RAM.buscar_Posicion_BCP(pPID);
+                if (posBCP3 != -1) {
+                    liberar_Memoria_BCP(posBCP3);
+                }
+                break;                
         }
 
     }
@@ -208,6 +221,13 @@ public class GestorMemoria {
                     return 1;
                 }
                 return 0;
+            
+            case "ParticionIgualDinamica": 
+                if (controlador_MemoriaParticionada.hayParticionesEstaticasDinamicasLibres(tamano)){
+                    return 1;
+                }
+                return 0;
+            
 
         }
         return 0;
@@ -403,6 +423,9 @@ public class GestorMemoria {
                 return memoriaPaginada.obtenerInstruccion(pPosicion, memInit);
 
             case("ParticionIgual"):
+                return Memoria_RAM.getMemoria_Principal().get(pPosicion);
+
+            case("ParticionIgualDinamica"):
                 return Memoria_RAM.getMemoria_Principal().get(pPosicion);
         }
 

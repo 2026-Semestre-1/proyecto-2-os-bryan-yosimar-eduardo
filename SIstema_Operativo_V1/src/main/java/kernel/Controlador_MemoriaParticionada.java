@@ -54,6 +54,8 @@ public class Controlador_MemoriaParticionada {
         return -1;
     }
 
+    
+
     /*
     public String obtenerInstruccionEstaticaIgual(int posicion){
         for ( Particion particion : particiones) {
@@ -81,6 +83,20 @@ public class Controlador_MemoriaParticionada {
         }
         return -1;
     }
+
+    public int liberarProcesoEstaticoDinamico(int pid, Memoria memoria) {
+        for (Particion particion : particiones) {
+            if (particion.procesoAsignado == pid) {
+                for (int i = particion.inicio; i <= particion.fin; i++) {
+                    memoria.getMemoria_Principal().put(i, "");
+                }
+                particion.procesoAsignado = -1;
+                System.out.println("Proceso con PID " + pid + " liberado de Partición " + particion.id);
+                return particion.id;
+            }
+        }
+        return -1;
+    }    
 
     public int getInicioParticion(int idParticion) {
         return particiones.get(idParticion).inicio;
@@ -140,7 +156,22 @@ public class Controlador_MemoriaParticionada {
         }         
         return particiones.size();
     }  
-    
+
+    public int asignarProcesoEstaticoDinamico(Codigo_ASM codigoASM, int pid, String nombre, Memoria memoria) {
+        for (Particion particion : particiones) {
+            if (particion.procesoAsignado == -1 && particion.tamano >= codigoASM.getContador_Intrucciones()) {
+                particion.procesoAsignado = pid;
+                int pos = particion.inicio;
+                for (Instruccion inst : codigoASM.getInstrucciones()) {
+                    memoria.getMemoria_Principal().put(pos, inst.get_Intruccion_Completa());
+                    pos++;
+                }
+                System.out.println("Proceso " + nombre + " asignado a Partición " + particion.id);
+                return particion.id;
+            }
+        }
+        return -1;
+    }    
     
     public int crearMemoriaDinamica(int posInicial, int tamanioProceso, int tamanioTotalRAM, int espacioUtilizable) throws Exception {
         int inicio = espacioUtilizable; // Esto es el fin del proceso anterior + 1 para empezar correctamente
@@ -223,5 +254,15 @@ public class Controlador_MemoriaParticionada {
         }
         return false;
     }
+
+
+    public boolean hayParticionesEstaticasDinamicasLibres(int tamanoProceso) {
+        for(Particion particion : particiones){
+            if (particion.tamano >= tamanoProceso && particion.procesoAsignado == -1){
+                return true;
+            }
+        }
+        return false;
+    }    
 
 }

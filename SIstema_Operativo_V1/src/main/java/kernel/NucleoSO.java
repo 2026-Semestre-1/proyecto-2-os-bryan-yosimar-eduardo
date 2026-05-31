@@ -69,7 +69,21 @@ public class NucleoSO {
                 this.controlador_Memoria = new GestorMemoria(memoria, almacenamiento, controlador_MemoriaParticionada, "ParticionIgual");
                 this.planificador.setControlador_Memoria(controlador_Memoria);
                 crear_CPU(config2.getCant_CPU());              
-                break;                            
+                break; 
+                
+            case "ParticionIgualDinamica":
+                this.memoriaPaginada = null;
+                Configuracion config3 = GestorArchivos.cargarConfiguracion();
+                if (config3 == null) {
+                    System.out.println("Error: No se pudo cargar la configuracion.");
+                    return;
+                }
+                crear_almacenamiento(config3.getAlmacenamiento(), config3.getMemoria_Virtual(), 20);   
+                crear_memoriaParticionFijaTamanosDimanicos(config3.getMemoria()); 
+                this.controlador_Memoria = new GestorMemoria(memoria, almacenamiento, controlador_MemoriaParticionada, "ParticionIgualDinamica");
+                this.planificador.setControlador_Memoria(controlador_Memoria);
+                crear_CPU(config3.getCant_CPU());              
+                break;                 
 
         }
     }
@@ -88,10 +102,21 @@ public class NucleoSO {
         int espacioUsuario = memoria.getEspacio_Usuario();
         this.memoria.soloKernel();   
         controlador_MemoriaParticionada.inicializarParticionesFijasIguales(posInicioUsuario,espacioUsuario, tamanoMemoria);  
-
-
-
     }
+
+
+    public void crear_memoriaParticionFijaTamanosDimanicos(int tamanoMemoria) {
+        this.memoria = new Memoria(tamanoMemoria);
+        int posInicioUsuario = memoria.getPosicion_Actual_Usuario();
+        int espacioUsuario = memoria.getEspacio_Usuario();
+        this.memoria.soloKernel();   
+        try { 
+        controlador_MemoriaParticionada.inicializarParticionesFijasDistribucion(posInicioUsuario,espacioUsuario, tamanoMemoria);  
+        } catch (Exception e) {
+            System.out.println("Error al inicializar particiones fijas dinamicas: " + e.getMessage());
+            e.printStackTrace();         
+        }
+    }    
 
     public int cargar_configuracion() {
         Configuracion config = GestorArchivos.cargarConfiguracion();
