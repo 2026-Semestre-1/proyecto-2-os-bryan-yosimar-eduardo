@@ -230,21 +230,72 @@ public class Controlador_MemoriaParticionada {
         return 0;
     }
 
+    public int moverProcesosRamDinamica(Memoria memoria){
+        int i = 0;
+        while (i < particiones.size() - 1) {
+            if (particiones.get(i).procesoAsignado == -1 &&
+                particiones.get(i + 1).procesoAsignado != -1) {
+
+                Particion libre = particiones.get(i);
+                Particion ocupada = particiones.get(i + 1);
+                int tam = ocupada.tamano;
+                int destino = libre.inicio;
+                int origen = ocupada.inicio;
+
+                for (int j = 0; j < tam; j++) {
+                    String instr = memoria.getMemoria_Principal().get(origen + j);
+                    memoria.getMemoria_Principal().put(destino + j, instr);
+                    memoria.getMemoria_Principal().put(origen + j, "");
+                }
+
+                particiones.remove(i);
+                Particion movida = particiones.get(i);
+                movida.inicio = destino;
+                movida.fin = destino + tam - 1;
+                movida.tamano = tam;
+
+                reasignacionIdsMemoriaDinamica();
+
+                int pidMovido = movida.procesoAsignado;
+                int posBCP = memoria.buscar_Posicion_BCP(pidMovido);
+                if (posBCP != -1) {
+                    memoria.getMemoria_Principal().put(posBCP + 3, String.valueOf(movida.inicio));
+                    memoria.getMemoria_Principal().put(posBCP + 4, String.valueOf(movida.fin));
+                    memoria.getMemoria_Principal().put(posBCP + 5, String.valueOf(movida.inicio));
+                }
+
+            } else {
+                i++;
+            }
+        }
+        return 0;
+    }
+
+
     public int bestFitMemoriaDinamica(int tamanoProceso) {
-        int i = 10000; // doy un valor alto
-        int idParticion = -1; // En caso de que no encuentre devuelvo -1 
+        int mejorTamano = Integer.MAX_VALUE;
+        int idParticion = -1;
         for (int j = 0; j < particiones.size(); j++) {
             Particion particion = particiones.get(j);
             if (particion.procesoAsignado == -1 && particion.tamano >= tamanoProceso) {
-                if(particion.tamano < i) {
-                    i = particion.tamano;
+                if (particion.tamano < mejorTamano) {
+                    mejorTamano = particion.tamano;
                     idParticion = particion.id;
                 }
-            
             }          
         }
-     return idParticion;
-    }   
+        return idParticion;
+    }  
+    
+    public int crearParticionDinamica(int tamanoProceso, int espacioUtilizable, int tamanioTotalRAM) throws Exception {
+        int fin = espacioUtilizable + tamanoProceso - 1;
+        if (fin > tamanioTotalRAM) {
+            throw new Exception("Se sobrepasa el tamaño total de la RAM. No se pueden crear más particiones.");
+        }
+        particiones.add(new Particion(particiones.size(), espacioUtilizable, fin));
+        System.out.println("Part " + (particiones.size() - 1) + ": inicio=" + espacioUtilizable + " fin=" + fin);
+        return particiones.size() - 1;
+    }
 
     public boolean hayParticionesEstaticasLibres(int tamanoProceso) {
         for(Particion particion : particiones){
@@ -254,6 +305,15 @@ public class Controlador_MemoriaParticionada {
         }
         return false;
     }
+
+
+    public boolean hayParticionesDinamicasLibres(int tamanoProceso, Memoria memoria) {
+        int espacioLibre = memoria.getEspacio_Usuario() - memoria.getEspacio_Usado_Usuario();
+        if (espacioLibre >= tamanoProceso) {
+            return true;
+        }
+        return false;
+    }    
 
 
     public boolean hayParticionesEstaticasDinamicasLibres(int tamanoProceso) {

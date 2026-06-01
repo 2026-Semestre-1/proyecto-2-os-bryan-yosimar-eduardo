@@ -19,6 +19,10 @@ public class Particion {
     }
 
 
+    public void setFin(int fin){
+        this.fin = fin;
+    }
+
 
 
 }

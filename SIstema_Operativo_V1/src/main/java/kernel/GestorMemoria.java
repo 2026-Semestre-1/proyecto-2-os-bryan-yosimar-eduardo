@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import Memoria.Modelo.Particion;
 import model.Almacenamiento;
 import model.BCP;
 import model.Codigo_ASM;
@@ -115,11 +116,44 @@ public class GestorMemoria {
                     codigoASM, pID, nombreProceso, Memoria_RAM);               
                 break;
 
+            case "Dinamica":
+                int tamanoTotalProceso = codigoASM.getContador_Intrucciones();
+                int idParticion = controlador_MemoriaParticionada.bestFitMemoriaDinamica(tamanoTotalProceso);
+                if (idParticion == -1) {
+                    int espacioUtilizable;
+                    if (controlador_MemoriaParticionada.getParticiones().isEmpty()) {
+                        espacioUtilizable = this.Memoria_RAM.getPosicion_Actual_Usuario();
+                    } else {
+                        List<Particion> parts = controlador_MemoriaParticionada.getParticiones();
+                        espacioUtilizable = parts.get(parts.size() - 1).fin + 1;
+                    }
+                    try {
+                        idParticion = controlador_MemoriaParticionada.crearParticionDinamica(
+                            tamanoTotalProceso, espacioUtilizable, this.Memoria_RAM.getEspacio_Total());
+                    } catch (Exception e) {
+                        System.out.println("Error al crear particion dinamica: " + e.getMessage());
+                        break;
+                    }
+                }
+                cargarInstruccionesEnParticionDinamica(idParticion, codigoASM, pID);
+                break;
+
         }
         return 0;
 
 
     }
+
+
+    public void cargarInstruccionesEnParticionDinamica(int idParticion, Codigo_ASM codigoASM, int pid) {
+        Particion p = controlador_MemoriaParticionada.getParticiones().get(idParticion);
+        int pos = p.inicio;
+        for (Instruccion inst : codigoASM.getInstrucciones()) {
+            Memoria_RAM.getMemoria_Principal().put(pos, inst.get_Intruccion_Completa());
+            pos++;
+        }
+        p.procesoAsignado = pid;
+    }  
 
 
     public void limpiar_Memoria_Proceso(int pPID, int pPosicion_Final, String nombreProceso) {
@@ -155,7 +189,17 @@ public class GestorMemoria {
                 if (posBCP3 != -1) {
                     liberar_Memoria_BCP(posBCP3);
                 }
-                break;                
+                break;         
+                
+            case "Dinamica":     
+                controlador_MemoriaParticionada.liberarMemoriaDinamica(pPID);
+                controlador_MemoriaParticionada.moverProcesosRamDinamica(Memoria_RAM);
+                controlador_MemoriaParticionada.compactacionMemoriaDinamica();
+                int posBCP4 = this.Memoria_RAM.buscar_Posicion_BCP(pPID);
+                if (posBCP4 != -1) {
+                    liberar_Memoria_BCP(posBCP4);
+                }
+                break;
         }
 
     }
@@ -197,7 +241,7 @@ public class GestorMemoria {
         }
     }
 
-    public int validar_Espacio_Disponible_Usuario(int tamano, String nombreProceso) {
+    public int validar_Espacio_Disponible_Usuario(int tamano, String nombreProceso, Memoria memoria) {
         switch (this.tipoGestionMemoria) {
             case "Normal":
                 if (this.Memoria_RAM.getEspacio_Usado_Usuario() + tamano <= this.Memoria_RAM.getEspacio_Usuario()) {
@@ -227,6 +271,12 @@ public class GestorMemoria {
                     return 1;
                 }
                 return 0;
+
+            case "Dinamica": 
+            if (controlador_MemoriaParticionada.hayParticionesDinamicasLibres(tamano, memoria)) {
+                return 1;
+            }
+            return 0;
             
 
         }
@@ -427,6 +477,10 @@ public class GestorMemoria {
 
             case("ParticionIgualDinamica"):
                 return Memoria_RAM.getMemoria_Principal().get(pPosicion);
+
+            case("Dinamica"):
+                return Memoria_RAM.getMemoria_Principal().get(pPosicion);
+
         }
 
         return null;

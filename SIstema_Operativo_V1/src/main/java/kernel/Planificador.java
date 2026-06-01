@@ -214,7 +214,7 @@ public class Planificador {
             int espacio_Necesario_Programa = codigo.getContador_Intrucciones();
             int espacio_Necesario_BCP = 26;
             int hay_esoacio_OS = this.controlador_Memoria
-                    .validar_Espacio_Disponible_Usuario(espacio_Necesario_Programa, nombre_Programa);
+                    .validar_Espacio_Disponible_Usuario(espacio_Necesario_Programa, nombre_Programa, pMemoria_Principal);
             int osCheck = pMemoria_Principal.validar_Espacio_Disponible_OS(espacio_Necesario_BCP);
             System.out.println("[DEBUG FSFS] i=" + i + " prog=" + nombre_Programa
                     + " | OS usado=" + pMemoria_Principal.getEspacio_Usado_OS()
@@ -245,6 +245,12 @@ public class Planificador {
                         pTiempo_Total_CPU, tiempo_Estimado, pos_MV, pcInicial);
                 } 
                 else if ("ParticionIgualDinamica".equals(controlador_Memoria.getTipoGestionMemoria())){
+                    controlador_Memoria.asignar_Memoria_Programa(codigo, nombre_Programa, pid);
+                    pcInicial = controlador_Memoria.getInicioParticionProceso(pid);
+                    pMemoria_Principal.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1, 
+                        pTiempo_Total_CPU, tiempo_Estimado, pos_MV, pcInicial);                    
+                }
+                else if ("Dinamica".equals(controlador_Memoria.getTipoGestionMemoria())){
                     controlador_Memoria.asignar_Memoria_Programa(codigo, nombre_Programa, pid);
                     pcInicial = controlador_Memoria.getInicioParticionProceso(pid);
                     pMemoria_Principal.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1, 
