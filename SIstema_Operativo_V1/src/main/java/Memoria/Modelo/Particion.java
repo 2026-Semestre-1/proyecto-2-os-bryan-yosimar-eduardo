@@ -9,6 +9,7 @@ public class Particion {
     public int fin;
     public int tamano;
     public int procesoAsignado; // si esta libre -1 >= 0 si hay algo
+    public List<Overlay> overlays = new ArrayList<>();
 
     public Particion(int id, int inicio, int fin) {
         this.id = id;

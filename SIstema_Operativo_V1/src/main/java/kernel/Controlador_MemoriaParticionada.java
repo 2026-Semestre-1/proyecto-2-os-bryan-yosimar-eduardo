@@ -3,9 +3,9 @@ import Memoria.Modelo.Particion;
 import model.Codigo_ASM;
 import model.Instruccion;
 import model.Memoria;
-
 import java.util.ArrayList;
 import java.util.List;
+import Memoria.Modelo.Overlay;
 
 public class Controlador_MemoriaParticionada {
     List<Particion> particiones = new ArrayList<>();
@@ -111,49 +111,45 @@ public class Controlador_MemoriaParticionada {
         return -1;
     }
 
-
-    public int inicializarParticionesFijasIguales(int inicioMemoria, int tamanioMemoria, int tamanioTotalRAM) {
-        int inicio = inicioMemoria; // Esto donde inicia el usuario
-        int disponible = tamanioMemoria; // Esto seria la memoria disponbible de parte del usuario  
-        int numDivision = 4;
-        int tamanoParticion = disponible / numDivision; // Aqui lo divido en 4 partes iguales pero realmente podemos poner la que queramos
-        for(int i = 0; i < numDivision; i++) {
-            int fin = inicio + tamanoParticion - 1;
-            if(fin > tamanioTotalRAM) {
-                System.out.println("Se sobrepasa el tamaño total de la RAM. No se pueden crear más particiones.");
-                break;
+    public int getTamanoParticionPorProceso(int pid) {
+        for (Particion p : particiones) {
+            if (p.procesoAsignado == pid) {
+                return p.tamano;
             }
-            particiones.add(new Particion(i, inicio, fin));
-            System.out.println("Part " + i + ": inicio=" + inicio + " fin=" + fin);
-            inicio = fin + 1;
-        } 
-        return particiones.size();     
+        }
+        return -1;
     }
 
 
-    public int inicializarParticionesFijasDistribucion(int inicioMemoria, int tamanioMemoria, int tamanioTotalRAM) throws Exception{
-        int inicio = inicioMemoria; // Esto donde inicia el usuario
-        int disponible = tamanioMemoria; // Esto seria la memoria disponbible de parte del usuario
-        int particion1 = (int)(disponible * 0.08);
-        int particion2 = (int)(disponible * 0.12);
-        int particion3 = (int)(disponible * 0.17);
-        int particion4 = (int)(disponible * 0.25);
-        int particion5 = disponible - particion1 - particion2 - particion3 - particion4;
-        List<Integer> particiones2 = new ArrayList<>();
-        particiones2.add(particion1);
-        particiones2.add(particion2);
-        particiones2.add(particion3);
-        particiones2.add(particion4);
-        particiones2.add(particion5);
-        for(int i = 0; i < 5; i++) {
-            int fin = inicio + particiones2.get(i) - 1;
-            if(fin > tamanioTotalRAM) {
-                throw new Exception("Se sobrepasa el tamaño total de la RAM. No se pueden crear más particiones.");
-            }
+    public int inicializarParticionesFijasIguales(int inicioMemoria, int tamanioTotalRAM, int tamanoParticion) {
+        particiones.clear();
+        int inicio = inicioMemoria;
+        int i = 0;
+        while (true) {
+            int fin = inicio + tamanoParticion - 1;
+            if (fin > tamanioTotalRAM) break;
             particiones.add(new Particion(i, inicio, fin));
             System.out.println("Part " + i + ": inicio=" + inicio + " fin=" + fin);
             inicio = fin + 1;
-        }         
+            i++;
+        }
+        return particiones.size();
+    }
+
+
+    public int inicializarParticionesFijasDistribucion(int inicioMemoria, int tamanioMemoria, int tamanioTotalRAM, List<Integer> porcentajes) throws Exception{
+        particiones.clear();
+        int inicio = inicioMemoria;
+        for (int i = 0; i < porcentajes.size(); i++) {
+            int tam = (int)(tamanioMemoria * (porcentajes.get(i) / 100.0));
+            int fin = inicio + tam - 1;
+            if (fin > tamanioTotalRAM) {
+                throw new Exception("Se sobrepasa el tamaño total de la RAM. No se pueden crear más particiones.");
+            }
+            particiones.add(new Particion(i, inicio, fin));
+            System.out.println("Part " + i + ": inicio=" + inicio + " fin=" + fin + " (" + porcentajes.get(i) + "%)");
+            inicio = fin + 1;
+        }
         return particiones.size();
     }  
 
@@ -324,5 +320,13 @@ public class Controlador_MemoriaParticionada {
         }
         return false;
     }    
+
+    public int crearOverlays(int cantidadOverlays, int particionIndex) {
+        Particion p = particiones.get(particionIndex);
+        for (int x = 0; x < cantidadOverlays; x++){
+            p.overlays.add(new Overlay(x + 1));
+        }
+        return cantidadOverlays;
+    }
 
 }

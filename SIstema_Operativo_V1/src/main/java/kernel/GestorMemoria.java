@@ -3,6 +3,7 @@ package kernel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 import Memoria.Modelo.Particion;
 import model.Almacenamiento;
@@ -22,7 +23,21 @@ public class GestorMemoria {
     private Almacenamiento Disco;
     private MemoriaPaginada memoriaPaginada;
     private String tipoGestionMemoria; 
-    private Controlador_MemoriaParticionada controlador_MemoriaParticionada; 
+    private Controlador_MemoriaParticionada controlador_MemoriaParticionada;
+    private Map<Integer, BCP> bcpCache = new HashMap<>();
+    private int ultimaPosMV = 0;
+
+    public int obtenerUltimaPosMV() {
+        return ultimaPosMV;
+    }
+
+    public void guardarBCP(BCP bcp) {
+        bcpCache.put(bcp.getPID(), bcp);
+    }
+
+    public BCP obtenerBCP(int pid) {
+        return bcpCache.get(pid);
+    }
 
     public GestorMemoria(Memoria pMemoria, Almacenamiento pDisco, String pTipoGestionMemoria) {
         this.Memoria_RAM = pMemoria;
@@ -264,13 +279,13 @@ public class GestorMemoria {
                 if (controlador_MemoriaParticionada.hayParticionesEstaticasLibres(tamano)){
                     return 1;
                 }
-                return 0;
+                return 3;
             
             case "ParticionIgualDinamica": 
                 if (controlador_MemoriaParticionada.hayParticionesEstaticasDinamicasLibres(tamano)){
                     return 1;
                 }
-                return 0;
+                return 3;
 
             case "Dinamica": 
             if (controlador_MemoriaParticionada.hayParticionesDinamicasLibres(tamano, memoria)) {
@@ -282,6 +297,67 @@ public class GestorMemoria {
         }
         return 0;
     }
+
+    public int crearOverlay(int cantidadInstrucciones, Codigo_ASM codigo, int pid){
+        for(int i = 0; i <controlador_MemoriaParticionada.getParticiones().size(); i++) {
+            Particion p = controlador_MemoriaParticionada.getParticiones().get(i);
+            if(p.procesoAsignado == -1){
+                p.procesoAsignado = pid;
+                int tamanoParticion = p.tamano;
+                int lugar = p.inicio;
+                for (int j = 0; j < p.tamano && j < cantidadInstrucciones; j++){
+                    String ins = codigo.getInstrucciones().get(j).getInstruccion_Completa_Original();
+                    this.Memoria_RAM.agregar_Instruccion_Usuario(lugar, ins);
+                    lugar++;
+                }
+                int instruccionesRestantes = cantidadInstrucciones - tamanoParticion;
+                int CantidadOverlays = 0;
+                if (instruccionesRestantes > 0) {
+                    CantidadOverlays = (int) Math.ceil((double)instruccionesRestantes / tamanoParticion);
+                    controlador_MemoriaParticionada.crearOverlays(CantidadOverlays, i);
+                    this.ultimaPosMV = this.Disco.getPosicion_Memoria_Virtual();
+                    for (int j = tamanoParticion; j < cantidadInstrucciones; j++) {
+                        String ins = codigo.getInstrucciones().get(j).getInstruccion_Completa_Original();
+                        this.Disco.getMemoria_Secundaria().put(this.ultimaPosMV + (j - tamanoParticion), ins);
+                    }
+                }
+                return CantidadOverlays;
+            }
+        }
+        return 0;
+    }
+
+    public void swapOverlay(BCP bcp) {
+        int pid = bcp.getPID();
+        if (!bcp.isTieneOverlay() || bcp.getOverlayActual() >= bcp.getTotalOverlays()) return;
+
+        int particionInicio = controlador_MemoriaParticionada.getInicioParticionPorProceso(pid);
+        if (particionInicio == -1) return;
+        int particionTamano = 0;
+        int posInicioMV = bcp.getPosInicioOverlayMV();
+        for (Particion p : controlador_MemoriaParticionada.getParticiones()) {
+            if (p.procesoAsignado == pid) {
+                particionTamano = p.tamano;
+                break;
+            }
+        }
+
+        for (int i = 0; i < particionTamano; i++) {
+            Memoria_RAM.getMemoria_Principal().put(particionInicio + i, "");
+        }
+
+        int offset = bcp.getOverlayActual() * particionTamano;
+        for (int i = 0; i < particionTamano; i++) {
+            String ins = this.Disco.getMemoria_Secundaria().get(posInicioMV + offset + i);
+            if (ins == null) break;
+            Memoria_RAM.getMemoria_Principal().put(particionInicio + i, ins);
+            this.Disco.getMemoria_Secundaria().put(posInicioMV + offset + i, "");
+        }
+
+        bcp.setOverlayActual(bcp.getOverlayActual() + 1);
+    }
+
+    
 
     private List<String> copiarBloque(int inicio, int longitud) {
         List<String> temp = new ArrayList<>(longitud);
@@ -441,6 +517,10 @@ public class GestorMemoria {
         if (bcp == null) {
             return -1;
         }
+        BCP cachedBcp = obtenerBCP(pPID);
+        if (cachedBcp != null && cachedBcp.isTieneOverlay() && cachedBcp.getOverlayActual() < cachedBcp.getTotalOverlays()) {
+            return 0;
+        }
         int pc = Integer.parseInt(bcp.getPC()) - 1;
         int tam = Integer.parseInt(bcp.getMem_End());
         if (pc == tam) {
@@ -490,7 +570,11 @@ public class GestorMemoria {
 
     public int getInicioParticionProceso(int pid) {
         return controlador_MemoriaParticionada.getInicioParticionPorProceso(pid);
-    }    
+    }
+
+    public int getTamanoParticionProceso(int pid) {
+        return controlador_MemoriaParticionada.getTamanoParticionPorProceso(pid);
+    }
 
     private int encontrarMemInit(int posicion) {
         for (int i = POSICION_INICIO_BCP; i < Memoria_RAM.getEspacio_OS(); i += TAMANO_BCP) {

@@ -9,6 +9,7 @@ import model.Codigo_ASM;
 import dto.SnapshotSistema;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import kernel.Controlador_MemoriaParticionada;
@@ -16,6 +17,7 @@ import Memoria.Modelo.*;
 
 
 import Config.Configuracion;
+import Config.ConfigParticion;
 
 public class NucleoSO {
     private Memoria memoria = null;
@@ -116,8 +118,10 @@ public class NucleoSO {
         this.memoria = new Memoria(tamanoMemoria);
         int posInicioUsuario = memoria.getPosicion_Actual_Usuario();
         int espacioUsuario = memoria.getEspacio_Usuario();
-        this.memoria.soloKernel();   
-        controlador_MemoriaParticionada.inicializarParticionesFijasIguales(posInicioUsuario,espacioUsuario, tamanoMemoria);  
+        this.memoria.soloKernel();
+        ConfigParticion configPart = GestorArchivos.cargarConfigParticion();
+        int tamanoFijo = (configPart != null) ? configPart.getEstatica() : espacioUsuario / 4;
+        controlador_MemoriaParticionada.inicializarParticionesFijasIguales(posInicioUsuario, tamanoMemoria, tamanoFijo);
     }
 
 
@@ -125,12 +129,14 @@ public class NucleoSO {
         this.memoria = new Memoria(tamanoMemoria);
         int posInicioUsuario = memoria.getPosicion_Actual_Usuario();
         int espacioUsuario = memoria.getEspacio_Usuario();
-        this.memoria.soloKernel();   
-        try { 
-        controlador_MemoriaParticionada.inicializarParticionesFijasDistribucion(posInicioUsuario,espacioUsuario, tamanoMemoria);  
+        this.memoria.soloKernel();
+        try {
+            ConfigParticion configPart = GestorArchivos.cargarConfigParticion();
+            List<Integer> porcentajes = (configPart != null) ? configPart.getDinamica() : Arrays.asList(8, 12, 17, 25, 38);
+            controlador_MemoriaParticionada.inicializarParticionesFijasDistribucion(posInicioUsuario, espacioUsuario, tamanoMemoria, porcentajes);
         } catch (Exception e) {
             System.out.println("Error al inicializar particiones fijas dinamicas: " + e.getMessage());
-            e.printStackTrace();         
+            e.printStackTrace();
         }
     }   
     
@@ -301,10 +307,27 @@ public class NucleoSO {
         }
         if (!this.comprobar_Finalizacion_Proceso()) {
             if (!this.hay_interrupcion) {
+                int pid = this.cpu1.getPID_Proceso_Actual();
+                int pc = this.cpu1.getPC();
+                BCP bcp = this.controlador_Memoria.obtenerBCP(pid);
+                if (bcp != null && bcp.isTieneOverlay() && bcp.getOverlayActual() < bcp.getTotalOverlays()) {
+                    int particionInicio = controlador_MemoriaParticionada.getInicioParticionPorProceso(pid);
+                    int particionFin = particionInicio;
+                    for (Particion p : controlador_MemoriaParticionada.getParticiones()) {
+                        if (p.procesoAsignado == pid) {
+                            particionFin = p.fin;
+                            break;
+                        }
+                    }
+                    if (pc > particionFin) {
+                        this.controlador_Memoria.swapOverlay(bcp);
+                        this.cpu1.setPC(particionInicio);
+                    }
+                }
                 this.cpu1.reiniciar_Interrupciones();
                 this.cpu1.ejecutar_Siguiente_Instruccion();
                 this.sincronizar_Datos_CPU_Memoria_BCP();
-                return this.procesar_Interrupciones(cpu1.getPID_Proceso_Actual());
+                return this.procesar_Interrupciones(pid);
             }
             return null;
         } else {
