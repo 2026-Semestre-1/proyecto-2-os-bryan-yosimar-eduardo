@@ -13,6 +13,7 @@ import java.io.BufferedReader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import Config.Configuracion;
+import Config.ConfigParticion;
 
 import java.io.InputStream;
 
@@ -72,6 +73,30 @@ public class GestorArchivos {
             if (config.getMemoria() < 512 || config.getAlmacenamiento() < 512 || config.getMemoria_Virtual() < 64
                     || config.getCant_CPU() < 1) {
                 System.out.println("Valores no permitidos en el archivo de configuracion.");
+                return null;
+            }
+
+            return config;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static ConfigParticion cargarConfigParticion() {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            InputStream is = GestorArchivos.class.getClassLoader()
+                    .getResourceAsStream("Config/Config_Particion.json");
+            if (is == null) {
+                System.out.println("No se encontro Config_Particion.json en el classpath.");
+                return null;
+            }
+            ConfigParticion config = mapper.readValue(is, ConfigParticion.class);
+
+            int suma = config.getDinamica().stream().mapToInt(Integer::intValue).sum();
+            if (suma != 100) {
+                System.out.println("Error: Los porcentajes de 'dinamica' suman " + suma + "%, debe ser 100%.");
                 return null;
             }
 

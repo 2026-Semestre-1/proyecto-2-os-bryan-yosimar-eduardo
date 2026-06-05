@@ -1,6 +1,7 @@
 package kernel;
 
 import model.Memoria;
+import model.MemoriaPaginada;
 import model.Almacenamiento;
 import model.BCP;
 import model.CPU;
@@ -8,10 +9,15 @@ import model.Codigo_ASM;
 import dto.SnapshotSistema;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import kernel.Controlador_MemoriaParticionada;
+import Memoria.Modelo.*;
+
 
 import Config.Configuracion;
+import Config.ConfigParticion;
 
 public class NucleoSO {
     private Memoria memoria = null;
@@ -19,14 +25,125 @@ public class NucleoSO {
     private CPU cpu1 = null;
     private Planificador planificador = null;
     private GestorMemoria controlador_Memoria = null;
+    private MemoriaPaginada memoriaPaginada = null;
     private int contador_ciclos = 0;
     private boolean programa_Iniciado = false;
     private boolean hay_interrupcion = false;
+    private Controlador_MemoriaParticionada controlador_MemoriaParticionada;
 
     public NucleoSO() {
         this.planificador = new Planificador();
-        cargar_configuracion();
+        this.controlador_MemoriaParticionada = new Controlador_MemoriaParticionada();
     }
+
+    public void configurarMemoria(String tipoMemoria) {
+        this.planificador = new Planificador();
+        this.programa_Iniciado = false;
+        this.hay_interrupcion = false;
+        this.contador_ciclos = 0;
+        switch(tipoMemoria) {
+            case "Paginacion":
+                Configuracion config = GestorArchivos.cargarConfiguracion();
+                if (config == null) {
+                    System.out.println("Error: No se pudo cargar la configuracion.");
+                    return;
+                }
+                crear_almacenamiento(config.getAlmacenamiento(), config.getMemoria_Virtual(), 20);
+                crear_memoriaParticionada(config.getMemoria());
+                this.controlador_Memoria = new GestorMemoria(memoria, almacenamiento, memoriaPaginada, "Paginacion");
+                this.planificador.setControlador_Memoria(controlador_Memoria);
+                crear_CPU(config.getCant_CPU());
+                break;
+            case "Normal":
+                this.memoriaPaginada = null;
+                cargar_configuracion();
+                break;
+
+            case "ParticionIgual":
+                this.memoriaPaginada = null;
+                Configuracion config2 = GestorArchivos.cargarConfiguracion();
+                if (config2 == null) {
+                    System.out.println("Error: No se pudo cargar la configuracion.");
+                    return;
+                }
+                crear_almacenamiento(config2.getAlmacenamiento(), config2.getMemoria_Virtual(), 20);   
+                crear_memoriaParticionFijajIgual(config2.getMemoria()); 
+                this.controlador_Memoria = new GestorMemoria(memoria, almacenamiento, controlador_MemoriaParticionada, "ParticionIgual");
+                this.planificador.setControlador_Memoria(controlador_Memoria);
+                crear_CPU(config2.getCant_CPU());              
+                break; 
+                
+            case "ParticionIgualDinamica":
+                this.memoriaPaginada = null;
+                Configuracion config3 = GestorArchivos.cargarConfiguracion();
+                if (config3 == null) {
+                    System.out.println("Error: No se pudo cargar la configuracion.");
+                    return;
+                }
+                crear_almacenamiento(config3.getAlmacenamiento(), config3.getMemoria_Virtual(), 20);   
+                crear_memoriaParticionFijaTamanosDimanicos(config3.getMemoria()); 
+                this.controlador_Memoria = new GestorMemoria(memoria, almacenamiento, controlador_MemoriaParticionada, "ParticionIgualDinamica");
+                this.planificador.setControlador_Memoria(controlador_Memoria);
+                crear_CPU(config3.getCant_CPU());              
+                break;    
+                
+            case "Dinamica":
+                this.memoriaPaginada = null;
+                Configuracion config4 = GestorArchivos.cargarConfiguracion();
+                if (config4 == null) {
+                    System.out.println("Error: No se pudo cargar la configuracion.");
+                    return;
+                }
+                crear_almacenamiento(config4.getAlmacenamiento(), config4.getMemoria_Virtual(), 20);
+                crear_memoriaDinamica(config4.getMemoria()); // ← solo crea RAM vacía
+                this.controlador_Memoria = new GestorMemoria(memoria, almacenamiento, 
+                    controlador_MemoriaParticionada, "Dinamica");
+                this.planificador.setControlador_Memoria(controlador_Memoria);
+                crear_CPU(config4.getCant_CPU());
+                break;               
+
+
+        }
+    }
+
+    public void crear_memoriaParticionada(int tamano_memoria) {
+        int cantidadFrames = (int) Math.ceil((double) tamano_memoria / 16);
+        this.memoriaPaginada = new MemoriaPaginada(16, cantidadFrames);
+        this.memoriaPaginada.inicializar();
+        this.memoria = new Memoria(tamano_memoria);
+        this.memoria.soloKernel();
+    }
+
+    public void crear_memoriaParticionFijajIgual(int tamanoMemoria) {
+        this.memoria = new Memoria(tamanoMemoria);
+        int posInicioUsuario = memoria.getPosicion_Actual_Usuario();
+        int espacioUsuario = memoria.getEspacio_Usuario();
+        this.memoria.soloKernel();
+        ConfigParticion configPart = GestorArchivos.cargarConfigParticion();
+        int tamanoFijo = (configPart != null) ? configPart.getEstatica() : espacioUsuario / 4;
+        controlador_MemoriaParticionada.inicializarParticionesFijasIguales(posInicioUsuario, tamanoMemoria, tamanoFijo);
+    }
+
+
+    public void crear_memoriaParticionFijaTamanosDimanicos(int tamanoMemoria) {
+        this.memoria = new Memoria(tamanoMemoria);
+        int posInicioUsuario = memoria.getPosicion_Actual_Usuario();
+        int espacioUsuario = memoria.getEspacio_Usuario();
+        this.memoria.soloKernel();
+        try {
+            ConfigParticion configPart = GestorArchivos.cargarConfigParticion();
+            List<Integer> porcentajes = (configPart != null) ? configPart.getDinamica() : Arrays.asList(8, 12, 17, 25, 38);
+            controlador_MemoriaParticionada.inicializarParticionesFijasDistribucion(posInicioUsuario, espacioUsuario, tamanoMemoria, porcentajes);
+        } catch (Exception e) {
+            System.out.println("Error al inicializar particiones fijas dinamicas: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }   
+    
+    public void crear_memoriaDinamica(int tamanoMemoria) {
+        this.memoria = new Memoria(tamanoMemoria);
+        this.memoria.soloKernel();
+    }    
 
     public int cargar_configuracion() {
         Configuracion config = GestorArchivos.cargarConfiguracion();
@@ -41,7 +158,7 @@ public class NucleoSO {
 
     public void crear_memoria(int tamano_memoria) {
         this.memoria = new Memoria(tamano_memoria);
-        this.controlador_Memoria = new GestorMemoria(memoria, almacenamiento);
+        this.controlador_Memoria = new GestorMemoria(memoria, almacenamiento, "Normal");
         this.planificador.setControlador_Memoria(controlador_Memoria);
     }
 
@@ -55,6 +172,10 @@ public class NucleoSO {
 
     public Memoria getMemoria() {
         return memoria;
+    }
+
+    public MemoriaPaginada getMemoriaPaginada() {
+        return memoriaPaginada;
     }
 
     public Almacenamiento getAlmacenamiento() {
@@ -186,10 +307,27 @@ public class NucleoSO {
         }
         if (!this.comprobar_Finalizacion_Proceso()) {
             if (!this.hay_interrupcion) {
+                int pid = this.cpu1.getPID_Proceso_Actual();
+                int pc = this.cpu1.getPC();
+                BCP bcp = this.controlador_Memoria.obtenerBCP(pid);
+                if (bcp != null && bcp.isTieneOverlay() && bcp.getOverlayActual() < bcp.getTotalOverlays()) {
+                    int particionInicio = controlador_MemoriaParticionada.getInicioParticionPorProceso(pid);
+                    int particionFin = particionInicio;
+                    for (Particion p : controlador_MemoriaParticionada.getParticiones()) {
+                        if (p.procesoAsignado == pid) {
+                            particionFin = p.fin;
+                            break;
+                        }
+                    }
+                    if (pc > particionFin) {
+                        this.controlador_Memoria.swapOverlay(bcp);
+                        this.cpu1.setPC(particionInicio);
+                    }
+                }
                 this.cpu1.reiniciar_Interrupciones();
                 this.cpu1.ejecutar_Siguiente_Instruccion();
                 this.sincronizar_Datos_CPU_Memoria_BCP();
-                return this.procesar_Interrupciones(cpu1.getPID_Proceso_Actual());
+                return this.procesar_Interrupciones(pid);
             }
             return null;
         } else {
@@ -286,6 +424,8 @@ public class NucleoSO {
     }
 
     public SnapshotSistema tomarSnapshot() {
+        MemoriaPaginada mp = (controlador_Memoria != null) ? controlador_Memoria.getMemoriaPaginada() : null;
+        List<Particion> particiones = (controlador_MemoriaParticionada != null) ? controlador_MemoriaParticionada.getParticiones() : null;
         if (cpu1 == null || memoria == null) {
             return new SnapshotSistema(
                     memoria,
@@ -293,7 +433,9 @@ public class NucleoSO {
                     new java.util.HashMap<>(),
                     null,
                     new java.util.ArrayList<>(),
-                    this.hay_interrupcion);
+                    this.hay_interrupcion,
+                    mp,
+                    particiones);
         }
         return new SnapshotSistema(
                 memoria,
@@ -301,6 +443,8 @@ public class NucleoSO {
                 this.planificador.obtener_Estado_5_Procesos(),
                 obtener_Datos_BCP_Actual(),
                 this.planificador.getCola_Procesos_Terminados(),
-                this.hay_interrupcion);
+                this.hay_interrupcion,
+                mp,
+                particiones);
     }
 }

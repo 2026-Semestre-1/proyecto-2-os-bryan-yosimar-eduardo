@@ -109,23 +109,28 @@ public class Memoria {
     }
 
     public int iniciar_Memoria_BCP(int pTamano_Proceso, int pPrioridad, int pProximo_Proceso, int pCPU_Asignada,
-            int pMomento_Llegada, int pDuracion_Estimada, int pos_Actual_MV) {
+            int pMomento_Llegada, int pDuracion_Estimada, int pos_Actual_MV, int pcInicial) {
         int pid = asignar_Nuevo_PID_Proceso();
         Memoria_Principal.put(posicion_Actual_OS, ((Integer) pid).toString());
         Memoria_Principal.put(posicion_Actual_OS + 1, "NEW");
         Memoria_Principal.put(posicion_Actual_OS + 2, ((Integer) pPrioridad).toString());
         if (this.validar_Espacio_Disponible_Usuario(pTamano_Proceso) == 0) {
-            Memoria_Principal.put(posicion_Actual_OS + 3, ((Integer) posicion_Actual_Usuario).toString());
-            Memoria_Principal.put(posicion_Actual_OS + 4,
-                    ((Integer) (posicion_Actual_Usuario + pTamano_Proceso - 1)).toString());
-            Memoria_Principal.put(posicion_Actual_OS + 5, ((Integer) posicion_Actual_Usuario).toString());
+            if (pcInicial == 0) {
+                Memoria_Principal.put(posicion_Actual_OS + 3, "0");
+                Memoria_Principal.put(posicion_Actual_OS + 4, String.valueOf(pTamano_Proceso - 1));
+            } else {
+                Memoria_Principal.put(posicion_Actual_OS + 3, String.valueOf(pcInicial));
+                Memoria_Principal.put(posicion_Actual_OS + 4,
+                        String.valueOf(pcInicial + pTamano_Proceso - 1));
+            }
+            Memoria_Principal.put(posicion_Actual_OS + 5, String.valueOf(pcInicial));
         } else {
             Memoria_Principal.put(posicion_Actual_OS + 3,
                     ((Integer) (this.getEspacio_Total() + pos_Actual_MV)).toString());
             Memoria_Principal.put(posicion_Actual_OS + 4,
                     ((Integer) (this.getEspacio_Total() + pos_Actual_MV + pTamano_Proceso - 1)).toString());
-            Memoria_Principal.put(posicion_Actual_OS + 5,
-                    ((Integer) (this.getEspacio_Total() + pos_Actual_MV)).toString());
+            Memoria_Principal.put(posicion_Actual_OS + 5, String.valueOf(pcInicial));
+                    
         }
         Memoria_Principal.put(posicion_Actual_OS + 6, "0000 0000 00000000");
         Memoria_Principal.put(posicion_Actual_OS + 7, "0");
@@ -423,6 +428,12 @@ public class Memoria {
             return 0;
         } else {
             return 1;
+        }
+    }
+
+    public void soloKernel() {
+        for (int i = espacio_OS; i < espacio_Total; i++) {
+            Memoria_Principal.put(i, "");
         }
     }
 

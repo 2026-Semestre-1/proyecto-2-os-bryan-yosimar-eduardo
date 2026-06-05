@@ -4,15 +4,21 @@ import kernel.NucleoSO;
 import model.Almacenamiento;
 import model.BCP;
 import model.Memoria;
+import model.MemoriaPaginada;
 import dto.SnapshotSistema;
+import Memoria.Modelo.TablaDePagina;
+import Memoria.Modelo.Frame;
+import Memoria.Modelo.Particion;
 
 import java.io.File;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 
+import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.JTabbedPane;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -25,11 +31,22 @@ public class Ventana_Principal extends javax.swing.JFrame {
 
         private static NucleoSO nucleo;
 
+        private String modeloGestionMemoria = "Paginacion";
+
         private Boolean bloqueo = false;
+
+        private JComboBox<String> Selector_Memoria;
+        private javax.swing.JLabel Selector_Memoria_Label;
+        private javax.swing.JLabel Frames_Label;
+        private javax.swing.JLabel Tabla_Paginas_Label;
+        private javax.swing.JTable Tabla_Frames;
+        private javax.swing.JTable Tabla_Tablas_Paginas;
+        private JTabbedPane Seccion_Inferior_Tab;
 
         public Ventana_Principal() {
                 initComponents();
                 nucleo = new NucleoSO();
+                nucleo.configurarMemoria(modeloGestionMemoria);
                 iniciar_Contenido_Base_tablas();
         }
 
@@ -181,6 +198,124 @@ public class Ventana_Principal extends javax.swing.JFrame {
                 jLabel1.setFont(new java.awt.Font("Segoe UI", 0, 36));
                 jLabel1.setText("Sistema Operativo V1");
 
+                Selector_Memoria_Label = new javax.swing.JLabel();
+                Selector_Memoria_Label.setText("Gestion de memoria:");
+
+                Selector_Memoria = new JComboBox<>(new String[] { "Normal", "Paginacion", "ParticionIgual", "ParticionIgualDinamica", "Dinamica" });
+                Selector_Memoria.setSelectedItem(modeloGestionMemoria);
+                Selector_Memoria.addActionListener(evt -> {
+                        String seleccion = (String) Selector_Memoria.getSelectedItem();
+                        if (seleccion != null && !seleccion.equals(modeloGestionMemoria)) {
+                                modeloGestionMemoria = seleccion;
+                                nucleo.configurarMemoria(modeloGestionMemoria);
+                                iniciar_Contenido_Base_tablas();
+                                actualizar_Tablas();
+                        }
+                });
+
+                Tabla_Frames = new javax.swing.JTable();
+                Tabla_Frames.setModel(new DefaultTableModel(
+                        new Object[][] {},
+                        new String[] { "Frame", "Estado", "Proceso" }
+                ));
+                jScrollPane7 = new javax.swing.JScrollPane(Tabla_Frames);
+
+                Tabla_Tablas_Paginas = new javax.swing.JTable();
+                Tabla_Tablas_Paginas.setModel(new DefaultTableModel(
+                        new Object[][] {},
+                        new String[] { "Proceso", "Pagina", "Frame" }
+                ));
+                jScrollPane8 = new javax.swing.JScrollPane(Tabla_Tablas_Paginas);
+
+                Frames_Label = new javax.swing.JLabel("Frames");
+                Tabla_Paginas_Label = new javax.swing.JLabel("Tabla de paginas");
+
+                javax.swing.JPanel panelFrames = new javax.swing.JPanel(new java.awt.BorderLayout());
+                panelFrames.add(Frames_Label, java.awt.BorderLayout.NORTH);
+                panelFrames.add(jScrollPane7, java.awt.BorderLayout.CENTER);
+
+                javax.swing.JPanel panelPaginas = new javax.swing.JPanel(new java.awt.BorderLayout());
+                panelPaginas.add(Tabla_Paginas_Label, java.awt.BorderLayout.NORTH);
+                panelPaginas.add(jScrollPane8, java.awt.BorderLayout.CENTER);
+
+                contenido_Text_Area = new javax.swing.JTextArea();
+                contenido_Text_Area.setEditable(false);
+                contenido_Text_Area.setFont(new java.awt.Font("Monospaced", java.awt.Font.PLAIN, 12));
+                contenido_Text_Area.setRows(8);
+                jScrollPane9 = new javax.swing.JScrollPane(contenido_Text_Area);
+                Contenido_Label = new javax.swing.JLabel("Contenido de pagina");
+
+                javax.swing.JPanel panelContenido = new javax.swing.JPanel(new java.awt.BorderLayout());
+                panelContenido.add(Contenido_Label, java.awt.BorderLayout.NORTH);
+                panelContenido.add(jScrollPane9, java.awt.BorderLayout.CENTER);
+
+                javax.swing.JPanel panelPaginacion = new javax.swing.JPanel(new java.awt.GridLayout(1, 3, 12, 0));
+                panelPaginacion.add(panelFrames);
+                panelPaginacion.add(panelPaginas);
+                panelPaginacion.add(panelContenido);
+
+                Tabla_Particiones = new javax.swing.JTable();
+                Tabla_Particiones.setModel(new DefaultTableModel(
+                        new Object[][] {},
+                        new String[] { "Particion", "Inicio", "Fin", "Tamano", "Estado", "Proceso" }
+                ));
+                jScrollPane10 = new javax.swing.JScrollPane(Tabla_Particiones);
+                Particiones_Label = new javax.swing.JLabel("Particiones fijas");
+
+                javax.swing.JPanel panelParticiones = new javax.swing.JPanel(new java.awt.BorderLayout());
+                panelParticiones.add(Particiones_Label, java.awt.BorderLayout.NORTH);
+                panelParticiones.add(jScrollPane10, java.awt.BorderLayout.CENTER);
+
+                Seccion_Inferior_Tab = new JTabbedPane();
+                Seccion_Inferior_Tab.addTab("Estadisticas", jScrollPane6);
+                Seccion_Inferior_Tab.addTab("Paginacion", panelPaginacion);
+                Seccion_Inferior_Tab.addTab("Particiones", panelParticiones);
+
+                Tabla_Frames.getSelectionModel().addListSelectionListener(e -> {
+                    if (!e.getValueIsAdjusting()) {
+                        int row = Tabla_Frames.getSelectedRow();
+                        if (row >= 0 && nucleo.getMemoriaPaginada() != null) {
+                            int numFrame = (int) Tabla_Frames.getModel().getValueAt(row, 0);
+                            MemoriaPaginada mp = nucleo.getMemoriaPaginada();
+                            Frame[] framesMp = mp.getFrames();
+                            if (framesMp != null && numFrame >= 0 && numFrame < framesMp.length) {
+                                Frame f = framesMp[numFrame];
+                                if (f != null && f.getPagina() != null) {
+                                    contenido_Text_Area.setText(formatearContenido(f.getPagina().getContenido()));
+                                } else {
+                                    contenido_Text_Area.setText("");
+                                }
+                            }
+                        }
+                    }
+                });
+
+                Tabla_Tablas_Paginas.getSelectionModel().addListSelectionListener(e -> {
+                    if (!e.getValueIsAdjusting()) {
+                        int row = Tabla_Tablas_Paginas.getSelectedRow();
+                        if (row >= 0 && nucleo.getMemoriaPaginada() != null) {
+                            String proceso = (String) Tabla_Tablas_Paginas.getModel().getValueAt(row, 0);
+                            int numPagina = (Integer) Tabla_Tablas_Paginas.getModel().getValueAt(row, 1);
+                            MemoriaPaginada mp = nucleo.getMemoriaPaginada();
+                            for (TablaDePagina tp : mp.getTablaDePaginas()) {
+                                if (tp.getNombreProceso().equals(proceso) && tp.getNumeroDePagina() == numPagina) {
+                                    int numFrame = tp.getNumeroDeFrame();
+                                    Frame[] framesMp = mp.getFrames();
+                                    if (framesMp != null && numFrame >= 0 && numFrame < framesMp.length) {
+                                        Frame f = framesMp[numFrame];
+                                        if (f != null && f.getPagina() != null) {
+                                            contenido_Text_Area.setText(formatearContenido(f.getPagina().getContenido()));
+                                        } else {
+                                            contenido_Text_Area.setText("");
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                });
+
                 javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
                 getContentPane().setLayout(layout);
                 layout.setHorizontalGroup(
@@ -217,8 +352,16 @@ public class Ventana_Principal extends javax.swing.JFrame {
                                                                                                                                                 javax.swing.GroupLayout.PREFERRED_SIZE,
                                                                                                                                                 javax.swing.GroupLayout.DEFAULT_SIZE,
                                                                                                                                                 javax.swing.GroupLayout.PREFERRED_SIZE))
-                                                                                                                .addComponent(Cargar_Archivos_BTN)
-                                                                                                                .addGroup(layout.createSequentialGroup()
+                                                                                                                 .addGroup(layout.createSequentialGroup()
+                                                                                                                                 .addComponent(Cargar_Archivos_BTN)
+                                                                                                                                 .addGap(18, 18, 18)
+                                                                                                                                 .addComponent(Selector_Memoria_Label)
+                                                                                                                                 .addGap(5, 5, 5)
+                                                                                                                                 .addComponent(Selector_Memoria,
+                                                                                                                                                 javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                                                                                 120,
+                                                                                                                                                 javax.swing.GroupLayout.PREFERRED_SIZE))
+                                                                                                                 .addGroup(layout.createSequentialGroup()
                                                                                                                                 .addGap(55, 55, 55)
                                                                                                                                 .addComponent(Lista_Procesos_Label)
                                                                                                                                 .addGap(177, 177,
@@ -244,10 +387,10 @@ public class Ventana_Principal extends javax.swing.JFrame {
                                                                                                                                                                 .addComponent(Limpiar_BTN)
                                                                                                                                                                 .addGap(18, 18, 18)
                                                                                                                                                                 .addComponent(Estadisticas_BTN))
-                                                                                                                                                .addComponent(jScrollPane6,
-                                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                                                                                                771,
-                                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)))))
+                                                                                 .addComponent(Seccion_Inferior_Tab,
+                                                                                                 javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                                 771,
+                                                                                                 javax.swing.GroupLayout.PREFERRED_SIZE)))))
                                                                                 .addGroup(layout.createSequentialGroup()
                                                                                                 .addGap(421, 421, 421)
                                                                                                 .addComponent(jLabel1)))
@@ -264,9 +407,16 @@ public class Ventana_Principal extends javax.swing.JFrame {
                                                                                 .addComponent(Paso_A_Paso_BTN)
                                                                                 .addComponent(Limpiar_BTN)
                                                                                 .addComponent(Estadisticas_BTN))
-                                                                .addGap(28, 28, 28)
-                                                                .addComponent(Cargar_Archivos_BTN)
-                                                                .addGap(29, 29, 29)
+                                                                 .addGap(28, 28, 28)
+                                                                 .addGroup(layout.createParallelGroup(
+                                                                                 javax.swing.GroupLayout.Alignment.BASELINE)
+                                                                                 .addComponent(Cargar_Archivos_BTN)
+                                                                                 .addComponent(Selector_Memoria_Label)
+                                                                                 .addComponent(Selector_Memoria,
+                                                                                                 javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                                 javax.swing.GroupLayout.DEFAULT_SIZE,
+                                                                                                 javax.swing.GroupLayout.PREFERRED_SIZE))
+                                                                 .addGap(29, 29, 29)
                                                                 .addGroup(layout.createParallelGroup(
                                                                                 javax.swing.GroupLayout.Alignment.BASELINE)
                                                                                 .addComponent(Lista_Procesos_Label)
@@ -302,11 +452,11 @@ public class Ventana_Principal extends javax.swing.JFrame {
                                                                                                                 0,
                                                                                                                 Short.MAX_VALUE)))
                                                                 .addGap(18, 18, 18)
-                                                                .addComponent(jScrollPane6,
-                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                244,
-                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                                .addContainerGap(157, Short.MAX_VALUE)));
+                                                                 .addComponent(Seccion_Inferior_Tab,
+                                                                                 javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                 300,
+                                                                                 javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                                 .addContainerGap(80, Short.MAX_VALUE)));
 
                 pack();
         }
@@ -376,6 +526,7 @@ public class Ventana_Principal extends javax.swing.JFrame {
                 if (estado_Ejecucion == null) {
                         this.limpiar_tabla_BCP();
                         this.limpiar_terminal();
+                        this.actualizar_Tablas();
                         return;
                 }
 
@@ -466,6 +617,9 @@ public class Ventana_Principal extends javax.swing.JFrame {
                 actualizar_tabla_Memoria(snap.memoria);
                 actualizar_Tabla_Procesos(snap.procesos);
                 actualizar_Tabla_BCP(snap.bcpActual);
+                actualizar_Tabla_Frames(snap.memoriaPaginada);
+                actualizar_Tabla_Paginas(snap.memoriaPaginada);
+                actualizar_Tabla_Particiones(snap.particiones);
         }
 
         public void iniciar_Contenido_Base_tablas() {
@@ -498,6 +652,7 @@ public class Ventana_Principal extends javax.swing.JFrame {
                 DefaultTableModel modeloTabla = (DefaultTableModel) Tabla_BCP.getModel();
 
                 if (datos_BCP == null) {
+                        limpiar_tabla_BCP();
                         return;
                 }
 
@@ -562,6 +717,69 @@ public class Ventana_Principal extends javax.swing.JFrame {
                 for (int i = 0; i < pAlmacenamiento.getTamano_Total(); i++) {
                         modeloTabla.addRow(new Object[] { i, almacenamiento_Actual.get(i) });
                 }
+        }
+
+        public void actualizar_Tabla_Frames(MemoriaPaginada memoriaPaginada) {
+                DefaultTableModel modeloTabla = (DefaultTableModel) Tabla_Frames.getModel();
+                modeloTabla.setRowCount(0);
+                if (memoriaPaginada == null) return;
+                Frame[] frames = memoriaPaginada.getFrames();
+                if (frames == null) return;
+                for (int i = 0; i < frames.length; i++) {
+                        Frame f = frames[i];
+                        if (f != null) {
+                                boolean libre = memoriaPaginada.isFrameLibre(i);
+                                String estado = libre ? "Libre" : "Ocupado";
+                                String proceso = "";
+                                if (!libre) {
+                                        for (TablaDePagina tp : memoriaPaginada.getTablaDePaginas()) {
+                                                if (tp.getNumeroDeFrame() == f.getNumFrame()) {
+                                                        proceso = tp.getNombreProceso();
+                                                        break;
+                                                }
+                                        }
+                                }
+                                modeloTabla.addRow(new Object[] { f.getNumFrame(), estado, proceso });
+                        } else {
+                                modeloTabla.addRow(new Object[] { i, "Libre", "" });
+                        }
+                }
+        }
+
+        public void actualizar_Tabla_Paginas(MemoriaPaginada memoriaPaginada) {
+                DefaultTableModel modeloTabla = (DefaultTableModel) Tabla_Tablas_Paginas.getModel();
+                modeloTabla.setRowCount(0);
+                if (memoriaPaginada == null) return;
+                List<TablaDePagina> paginas = memoriaPaginada.getTablaDePaginas();
+                if (paginas == null) return;
+                for (TablaDePagina tp : paginas) {
+                        modeloTabla.addRow(new Object[] {
+                                tp.getNombreProceso(),
+                                tp.getNumeroDePagina(),
+                                tp.getNumeroDeFrame()
+                        });
+                }
+        }
+
+        public void actualizar_Tabla_Particiones(List<Particion> particiones) {
+                DefaultTableModel modeloTabla = (DefaultTableModel) Tabla_Particiones.getModel();
+                modeloTabla.setRowCount(0);
+                if (particiones == null) return;
+                for (Particion p : particiones) {
+                        String estado = (p.procesoAsignado == -1) ? "Libre" : "Ocupado";
+                        String proceso = (p.procesoAsignado == -1) ? "" : String.valueOf(p.procesoAsignado);
+                        modeloTabla.addRow(new Object[] {
+                                p.id, p.inicio, p.fin, p.tamano, estado, proceso
+                        });
+                }
+        }
+
+        private String formatearContenido(List<String> instrucciones) {
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < instrucciones.size(); i++) {
+                        sb.append(i).append(": ").append(instrucciones.get(i)).append(System.lineSeparator());
+                }
+                return sb.toString();
         }
 
         public void limpiar_terminal() {
@@ -734,5 +952,13 @@ public class Ventana_Principal extends javax.swing.JFrame {
         private javax.swing.JScrollPane jScrollPane4;
         private javax.swing.JScrollPane jScrollPane5;
         private javax.swing.JScrollPane jScrollPane6;
+        private javax.swing.JScrollPane jScrollPane7;
+        private javax.swing.JScrollPane jScrollPane8;
+        private javax.swing.JScrollPane jScrollPane9;
+        private javax.swing.JScrollPane jScrollPane10;
+        private javax.swing.JTable Tabla_Particiones;
+        private javax.swing.JLabel Particiones_Label;
         private javax.swing.JTextArea terminal_Text_Area;
+        private javax.swing.JTextArea contenido_Text_Area;
+        private javax.swing.JLabel Contenido_Label;
 }

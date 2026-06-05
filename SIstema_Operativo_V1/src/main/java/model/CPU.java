@@ -292,7 +292,7 @@ public class CPU {
     }
 
     private void ejecutar_LOAD(String operandos) {
-        set_Espera(2);
+        set_Espera(1);
         System.out.println("CPU -> Ejecutando LOAD con operando: " + operandos);
         if (isRegister(operandos)) {
             System.out.println("CPU -> El operando es un registro");
@@ -307,7 +307,7 @@ public class CPU {
     }
 
     private void ejecutar_STORE(String pOperando1) {
-        set_Espera(2);
+        set_Espera(1);
         System.out.println("CPU -> Ejecutando STORE con operando: " + pOperando1);
         if (isRegister(pOperando1)) {
             System.out.println("CPU -> El operando es un registro");
@@ -366,7 +366,7 @@ public class CPU {
     }
 
     private void ejecutar_ADD(String operandos) {
-        set_Espera(3);
+        set_Espera(1);
         if (operandos.toUpperCase().equals("AC")) {
             this.error_Encontrado = true;
             this.descripcion_Error = "Error: El operando no puede ser el acumulador.";
@@ -383,7 +383,7 @@ public class CPU {
     }
 
     private void ejecutar_SUB(String operandos) {
-        set_Espera(3);
+        set_Espera(1);
         if (operandos.toUpperCase().equals("AC")) {
             this.error_Encontrado = true;
             this.descripcion_Error = "Error: El operando no puede ser el acumulador.";
@@ -443,21 +443,21 @@ public class CPU {
         String op = operandos.toUpperCase();
         switch (op) {
             case "20H":
-                set_Espera(2);
+                set_Espera(1);
                 proceso_Finalizado = true;
                 System.out.println("INT 20H: finalizar proceso.");
                 break;
             case "10H":
-                set_Espera(2);
+                set_Espera(1);
                 imprimir_Pantalla = true;
                 System.out.println("INT 10H: SALIDA -> " + DX);
                 break;
             case "09H":
-                set_Espera(2);
+                set_Espera(1);
                 leer_Teclado = true;
                 break;
             case "21H":
-                set_Espera(5);
+                set_Espera(1);
                 ejecutar_INT_21H(AH, DX);
                 break;
             default:
@@ -493,7 +493,7 @@ public class CPU {
     }
 
     private Integer ejecutar_JMP(String pOperando1) {
-        set_Espera(2);
+        set_Espera(1);
         String operando = pOperando1.trim();
         try {
             Integer offset = Integer.parseInt(operando);
@@ -523,7 +523,7 @@ public class CPU {
     }
 
     private void ejecutar_CMP(String operando1, String operando2) {
-        set_Espera(2);
+        set_Espera(1);
         operando1.trim();
         operando2.trim();
         if (isRegister(operando1) && isRegister(operando2)) {
@@ -549,7 +549,7 @@ public class CPU {
     }
 
     private void ejecutar_JE(String pOperando1) {
-        set_Espera(2);
+        set_Espera(1);
         if (flag_CMP == 0) {
             Integer resultado = ejecutar_JMP(pOperando1);
             if (resultado == null) {
@@ -562,7 +562,7 @@ public class CPU {
     }
 
     private void ejecutar_JNE(String pOperando1) {
-        set_Espera(2);
+        set_Espera(1);
         if (flag_CMP != 0) {
             Integer resultado = ejecutar_JMP(pOperando1);
             if (resultado == null) {
@@ -575,7 +575,7 @@ public class CPU {
     }
 
     private void ejecutar_PARAM(String pOperando1, String pOperando2, String pOperando3) {
-        set_Espera(3);
+        set_Espera(1);
         if (pOperando1 != null) {
             pOperando1.trim();
             ejecutar_PUSH(pOperando1);

@@ -31,6 +31,11 @@ public class BCP {
     private LocalTime momento_creacion;
     private LocalTime momento_finalizacion;
 
+    private int overlayActual = -1;
+    private int totalOverlays = 0;
+    private boolean tieneOverlay = false;
+    private int posInicioOverlayMV = 0;
+
     public BCP(int pPID, String pEstado, String pPrioridad, String pMem_Init, String pMem_End, String pPC, String pIR,
             String pAC, String pAX, String pBX, String pCX, String pDX, String pAH, String pAL, String pIO_STATUS,
             String pCPU_Asignada, String pTiempo_Llegada, String pTiempo_Inicio, String pTiempo_Finalizacion,
@@ -259,6 +264,10 @@ public class BCP {
         return nombre_Programa;
     }
 
+    public int getTamanoProceso() {
+        return espacio_Total_Programa;
+    }
+
     public void setNombre_Programa(String nombre_Programa) {
         this.nombre_Programa = nombre_Programa;
     }
@@ -286,6 +295,15 @@ public class BCP {
     public LocalTime get_momento_finalizacion() {
         return momento_finalizacion;
     }
+
+    public int getOverlayActual() { return overlayActual; }
+    public void setOverlayActual(int overlayActual) { this.overlayActual = overlayActual; }
+    public int getTotalOverlays() { return totalOverlays; }
+    public void setTotalOverlays(int totalOverlays) { this.totalOverlays = totalOverlays; }
+    public boolean isTieneOverlay() { return tieneOverlay; }
+    public void setTieneOverlay(boolean tieneOverlay) { this.tieneOverlay = tieneOverlay; }
+    public int getPosInicioOverlayMV() { return posInicioOverlayMV; }
+    public void setPosInicioOverlayMV(int v) { this.posInicioOverlayMV = v; }
 
     public void mostrar_datos_bcp() {
         System.out.println("-> PID: " + this.PID);

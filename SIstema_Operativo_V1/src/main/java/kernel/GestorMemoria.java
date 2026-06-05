@@ -3,12 +3,16 @@ package kernel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
+import Memoria.Modelo.Particion;
 import model.Almacenamiento;
 import model.BCP;
 import model.Codigo_ASM;
 import model.Instruccion;
 import model.Memoria;
+import model.MemoriaPaginada;
+
 
 public class GestorMemoria {
 
@@ -17,11 +21,46 @@ public class GestorMemoria {
 
     private Memoria Memoria_RAM;
     private Almacenamiento Disco;
+    private MemoriaPaginada memoriaPaginada;
+    private String tipoGestionMemoria; 
+    private Controlador_MemoriaParticionada controlador_MemoriaParticionada;
+    private Map<Integer, BCP> bcpCache = new HashMap<>();
+    private int ultimaPosMV = 0;
 
-    public GestorMemoria(Memoria pMemoria, Almacenamiento pDisco) {
+    public int obtenerUltimaPosMV() {
+        return ultimaPosMV;
+    }
+
+    public void guardarBCP(BCP bcp) {
+        bcpCache.put(bcp.getPID(), bcp);
+    }
+
+    public BCP obtenerBCP(int pid) {
+        return bcpCache.get(pid);
+    }
+
+    public GestorMemoria(Memoria pMemoria, Almacenamiento pDisco, String pTipoGestionMemoria) {
         this.Memoria_RAM = pMemoria;
         this.Disco = pDisco;
+        this.tipoGestionMemoria = pTipoGestionMemoria;
     }
+
+    public GestorMemoria(Memoria pMemoria, Almacenamiento pDisco, MemoriaPaginada pMemoriaPaginada, String
+        pTipoGestionMemoria) {
+        this.Memoria_RAM = pMemoria;
+        this.Disco = pDisco;
+        this.memoriaPaginada = pMemoriaPaginada;
+        this.tipoGestionMemoria = pTipoGestionMemoria;
+
+    } 
+    
+    public GestorMemoria(Memoria pMemoria, Almacenamiento pDisco, Controlador_MemoriaParticionada pControlador_MemoriaParticionada, 
+        String pTipoGestionMemoria ) {
+        this.Memoria_RAM = pMemoria;
+        this.Disco = pDisco;  
+        this.controlador_MemoriaParticionada =  pControlador_MemoriaParticionada;
+        this.tipoGestionMemoria = pTipoGestionMemoria;        
+        }
 
     public void set_Memoria(Memoria pMemoria) {
         this.Memoria_RAM = pMemoria;
@@ -29,6 +68,14 @@ public class GestorMemoria {
 
     public Memoria get_Memoria() {
         return this.Memoria_RAM;
+    }
+
+    public MemoriaPaginada getMemoriaPaginada() {
+        return this.memoriaPaginada;
+    }
+
+    public String getTipoGestionMemoria() {
+        return this.tipoGestionMemoria;
     }
 
     public int get_Nuevo_PID() {
@@ -39,36 +86,137 @@ public class GestorMemoria {
         return Disco.getPosicion_Memoria_Virtual();
     }
 
-    public int asignar_Memoria_Programa(Codigo_ASM codigoASM) {
-        int tamano = codigoASM.getContador_Intrucciones();
-        if (this.Memoria_RAM.getEspacio_Usado_Usuario() + tamano <= this.Memoria_RAM.getEspacio_Usuario()) {
-            int pos = this.Memoria_RAM.getPosicion_Actual_Usuario();
-            for (Instruccion instruccion_Actual : codigoASM.getInstrucciones()) {
-                this.Memoria_RAM.getMemoria_Principal().put(pos, instruccion_Actual.get_Intruccion_Completa());
-                pos++;
-            }
-            this.Memoria_RAM.setPosicion_Actual_Usuario(pos);
-            this.Memoria_RAM.setEspacio_Usado_Usuario(this.Memoria_RAM.getEspacio_Usado_Usuario() + tamano);
-            return 0;
-        } else {
-            int pos = this.Disco.getPosicion_Memoria_Virtual();
-            for (Instruccion instruccion_Actual : codigoASM.getInstrucciones()) {
-                this.Disco.getMemoria_Secundaria().put(pos, instruccion_Actual.get_Intruccion_Completa());
-                pos++;
-            }
-            this.Disco.setPosicion_Memoria_Virtual(pos);
-            this.Disco.setEspacio_Usado_Memoria_Virtual(this.Disco.getEspacio_Usado_Memoria_Virtual() + tamano);
-            return 1;
+    public int asignar_Memoria_Programa(Codigo_ASM codigoASM, String nombreProceso, int pID) {
+        switch(tipoGestionMemoria) {
+
+            case "Normal":
+                int tamano = codigoASM.getContador_Intrucciones();
+                if (this.Memoria_RAM.getEspacio_Usado_Usuario() + tamano <= this.Memoria_RAM.getEspacio_Usuario()) {
+                    int pos = this.Memoria_RAM.getPosicion_Actual_Usuario();
+                    for (Instruccion instruccion_Actual : codigoASM.getInstrucciones()) {
+                        this.Memoria_RAM.getMemoria_Principal().put(pos, instruccion_Actual.get_Intruccion_Completa());
+                        pos++;
+                    }
+                    this.Memoria_RAM.setPosicion_Actual_Usuario(pos);
+                    this.Memoria_RAM.setEspacio_Usado_Usuario(this.Memoria_RAM.getEspacio_Usado_Usuario() + tamano);
+                    return 0;
+                } else {
+                    int pos = this.Disco.getPosicion_Memoria_Virtual();
+                    for (Instruccion instruccion_Actual : codigoASM.getInstrucciones()) {
+                        this.Disco.getMemoria_Secundaria().put(pos, instruccion_Actual.get_Intruccion_Completa());
+                        pos++;
+                    }
+                    this.Disco.setPosicion_Memoria_Virtual(pos);
+                    this.Disco.setEspacio_Usado_Memoria_Virtual(this.Disco.getEspacio_Usado_Memoria_Virtual() + tamano);
+                    return 1;
+                }
+
+            case "Paginacion":
+                int cantidadPaginas = (int) Math.ceil((double)codigoASM.getContador_Intrucciones() / 16);
+                if (memoriaPaginada.hayFramesDisponibles(cantidadPaginas)) {
+                    memoriaPaginada.asignarProceso(codigoASM, nombreProceso);
+                    return 0;
+                } else {
+                    System.out.println("Gestor Memoria: No hay frames disponibles para asignar el proceso.");
+                    return 1;
+                }
+            case "ParticionIgual":
+                int tamanoproceso = codigoASM.getContador_Intrucciones();
+                controlador_MemoriaParticionada.asignarProcesoEstatico(
+                    codigoASM, pID, nombreProceso, Memoria_RAM);
+                break;
+
+            case "ParticionIgualDinamica":
+                controlador_MemoriaParticionada.asignarProcesoEstaticoDinamico(
+                    codigoASM, pID, nombreProceso, Memoria_RAM);               
+                break;
+
+            case "Dinamica":
+                int tamanoTotalProceso = codigoASM.getContador_Intrucciones();
+                int idParticion = controlador_MemoriaParticionada.bestFitMemoriaDinamica(tamanoTotalProceso);
+                if (idParticion == -1) {
+                    int espacioUtilizable;
+                    if (controlador_MemoriaParticionada.getParticiones().isEmpty()) {
+                        espacioUtilizable = this.Memoria_RAM.getPosicion_Actual_Usuario();
+                    } else {
+                        List<Particion> parts = controlador_MemoriaParticionada.getParticiones();
+                        espacioUtilizable = parts.get(parts.size() - 1).fin + 1;
+                    }
+                    try {
+                        idParticion = controlador_MemoriaParticionada.crearParticionDinamica(
+                            tamanoTotalProceso, espacioUtilizable, this.Memoria_RAM.getEspacio_Total());
+                    } catch (Exception e) {
+                        System.out.println("Error al crear particion dinamica: " + e.getMessage());
+                        break;
+                    }
+                }
+                cargarInstruccionesEnParticionDinamica(idParticion, codigoASM, pID);
+                break;
+
         }
+        return 0;
+
+
     }
 
-    public void limpiar_Memoria_Proceso(int pPID, int pPosicion_Final) {
-        List<Integer> posciones = this.liberar_Memoria_Proceso(pPID);
-        int pos_Inicial_Programa = posciones.get(0);
-        int pos_Final_Programa = posciones.get(1);
-        System.out.println("Controlador Memoria: Iniciando compactacion de la memoria hacia la izquierda.");
-        System.out.println("Controlador Memoria: Inciando compactacion del usuario...");
-        int espacio_Total = this.Memoria_RAM.getEspacio_Total();
+
+    public void cargarInstruccionesEnParticionDinamica(int idParticion, Codigo_ASM codigoASM, int pid) {
+        Particion p = controlador_MemoriaParticionada.getParticiones().get(idParticion);
+        int pos = p.inicio;
+        for (Instruccion inst : codigoASM.getInstrucciones()) {
+            Memoria_RAM.getMemoria_Principal().put(pos, inst.get_Intruccion_Completa());
+            pos++;
+        }
+        p.procesoAsignado = pid;
+    }  
+
+
+    public void limpiar_Memoria_Proceso(int pPID, int pPosicion_Final, String nombreProceso) {
+        switch(tipoGestionMemoria) {
+            case "Normal":
+                List<Integer> posciones = this.liberar_Memoria_Proceso(pPID);
+                int pos_Inicial_Programa = posciones.get(0);
+                int pos_Final_Programa = posciones.get(1);
+                System.out.println("Controlador Memoria: Iniciando compactacion de la memoria hacia la izquierda.");
+                System.out.println("Controlador Memoria: Inciando compactacion del usuario...");
+                int espacio_Total = this.Memoria_RAM.getEspacio_Total();
+                break;
+
+            case "Paginacion":
+                memoriaPaginada.liberarProceso(nombreProceso);
+                int posBCP = this.Memoria_RAM.buscar_Posicion_BCP(pPID);
+                if (posBCP != -1) {
+                    liberar_Memoria_BCP(posBCP);
+                }
+                break;
+
+            case "ParticionIgual":
+                controlador_MemoriaParticionada.liberarProcesoEstatico(pPID, Memoria_RAM);
+                int posBCP2 = this.Memoria_RAM.buscar_Posicion_BCP(pPID);
+                if (posBCP2 != -1) {
+                    liberar_Memoria_BCP(posBCP2);
+                }
+                break;
+
+            case "ParticionIgualDinamica":
+                controlador_MemoriaParticionada.liberarProcesoEstaticoDinamico(pPID, Memoria_RAM);
+                int posBCP3 = this.Memoria_RAM.buscar_Posicion_BCP(pPID);
+                if (posBCP3 != -1) {
+                    liberar_Memoria_BCP(posBCP3);
+                }
+                break;         
+                
+            case "Dinamica":     
+                controlador_MemoriaParticionada.liberarMemoriaDinamica(pPID);
+                controlador_MemoriaParticionada.moverProcesosRamDinamica(Memoria_RAM);
+                controlador_MemoriaParticionada.compactacionMemoriaDinamica();
+                int posBCP4 = this.Memoria_RAM.buscar_Posicion_BCP(pPID);
+                if (posBCP4 != -1) {
+                    liberar_Memoria_BCP(posBCP4);
+                }
+                break;
+        }
+
     }
 
     public List<Integer> liberar_Memoria_Proceso(int pid) {
@@ -108,14 +256,108 @@ public class GestorMemoria {
         }
     }
 
-    public int validar_Espacio_Disponible_Usuario(int tamano) {
-        if (this.Memoria_RAM.getEspacio_Usado_Usuario() + tamano <= this.Memoria_RAM.getEspacio_Usuario()) {
-            return 1;
-        } else if (this.Disco.getEspacio_Usado_Memoria_Virtual() + tamano <= this.Disco.getEspacio_Memoria_Virtual()) {
-            return 2;
+    public int validar_Espacio_Disponible_Usuario(int tamano, String nombreProceso, Memoria memoria) {
+        switch (this.tipoGestionMemoria) {
+            case "Normal":
+                if (this.Memoria_RAM.getEspacio_Usado_Usuario() + tamano <= this.Memoria_RAM.getEspacio_Usuario()) {
+                    return 1;
+                } else if (this.Disco.getEspacio_Usado_Memoria_Virtual() + tamano <= this.Disco.getEspacio_Memoria_Virtual()) {
+                    return 2;
+                }
+                return 0;
+
+            case "Paginacion":
+                int cantidadPaginas = (int) Math.ceil((double) tamano / 16);
+                if (memoriaPaginada.hayFramesDisponibles(cantidadPaginas)) {
+                    return 1;
+                } else {
+                    System.out.println("Gestor Memoria: No hay frames disponibles para asignar el proceso.");
+                    return 0;
+                }
+
+            case "ParticionIgual":
+                if (controlador_MemoriaParticionada.hayParticionesEstaticasLibres(tamano)){
+                    return 1;
+                }
+                return 3;
+            
+            case "ParticionIgualDinamica": 
+                if (controlador_MemoriaParticionada.hayParticionesEstaticasDinamicasLibres(tamano)){
+                    return 1;
+                }
+                return 3;
+
+            case "Dinamica": 
+            if (controlador_MemoriaParticionada.hayParticionesDinamicasLibres(tamano, memoria)) {
+                return 1;
+            }
+            return 0;
+            
+
         }
         return 0;
     }
+
+    public int crearOverlay(int cantidadInstrucciones, Codigo_ASM codigo, int pid){
+        for(int i = 0; i <controlador_MemoriaParticionada.getParticiones().size(); i++) {
+            Particion p = controlador_MemoriaParticionada.getParticiones().get(i);
+            if(p.procesoAsignado == -1){
+                p.procesoAsignado = pid;
+                int tamanoParticion = p.tamano;
+                int lugar = p.inicio;
+                for (int j = 0; j < p.tamano && j < cantidadInstrucciones; j++){
+                    String ins = codigo.getInstrucciones().get(j).getInstruccion_Completa_Original();
+                    this.Memoria_RAM.agregar_Instruccion_Usuario(lugar, ins);
+                    lugar++;
+                }
+                int instruccionesRestantes = cantidadInstrucciones - tamanoParticion;
+                int CantidadOverlays = 0;
+                if (instruccionesRestantes > 0) {
+                    CantidadOverlays = (int) Math.ceil((double)instruccionesRestantes / tamanoParticion);
+                    controlador_MemoriaParticionada.crearOverlays(CantidadOverlays, i);
+                    this.ultimaPosMV = this.Disco.getPosicion_Memoria_Virtual();
+                    for (int j = tamanoParticion; j < cantidadInstrucciones; j++) {
+                        String ins = codigo.getInstrucciones().get(j).getInstruccion_Completa_Original();
+                        this.Disco.getMemoria_Secundaria().put(this.ultimaPosMV + (j - tamanoParticion), ins);
+                    }
+                }
+                return CantidadOverlays;
+            }
+        }
+        return 0;
+    }
+
+    public void swapOverlay(BCP bcp) {
+        int pid = bcp.getPID();
+        if (!bcp.isTieneOverlay() || bcp.getOverlayActual() >= bcp.getTotalOverlays()) return;
+
+        int particionInicio = controlador_MemoriaParticionada.getInicioParticionPorProceso(pid);
+        if (particionInicio == -1) return;
+        int particionTamano = 0;
+        int posInicioMV = bcp.getPosInicioOverlayMV();
+        for (Particion p : controlador_MemoriaParticionada.getParticiones()) {
+            if (p.procesoAsignado == pid) {
+                particionTamano = p.tamano;
+                break;
+            }
+        }
+
+        for (int i = 0; i < particionTamano; i++) {
+            Memoria_RAM.getMemoria_Principal().put(particionInicio + i, "");
+        }
+
+        int offset = bcp.getOverlayActual() * particionTamano;
+        for (int i = 0; i < particionTamano; i++) {
+            String ins = this.Disco.getMemoria_Secundaria().get(posInicioMV + offset + i);
+            if (ins == null) break;
+            Memoria_RAM.getMemoria_Principal().put(particionInicio + i, ins);
+            this.Disco.getMemoria_Secundaria().put(posInicioMV + offset + i, "");
+        }
+
+        bcp.setOverlayActual(bcp.getOverlayActual() + 1);
+    }
+
+    
 
     private List<String> copiarBloque(int inicio, int longitud) {
         List<String> temp = new ArrayList<>(longitud);
@@ -275,6 +517,10 @@ public class GestorMemoria {
         if (bcp == null) {
             return -1;
         }
+        BCP cachedBcp = obtenerBCP(pPID);
+        if (cachedBcp != null && cachedBcp.isTieneOverlay() && cachedBcp.getOverlayActual() < cachedBcp.getTotalOverlays()) {
+            return 0;
+        }
         int pc = Integer.parseInt(bcp.getPC()) - 1;
         int tam = Integer.parseInt(bcp.getMem_End());
         if (pc == tam) {
@@ -292,12 +538,64 @@ public class GestorMemoria {
     }
 
     public String obtener_intruccion_Proceso(int pPosicion) {
-        if (pPosicion < Memoria_RAM.getEspacio_Total()) {
-            return Memoria_RAM.getMemoria_Principal().get(pPosicion);
+        switch(tipoGestionMemoria) {
+            case("Normal"):
+                if (pPosicion < Memoria_RAM.getEspacio_Total()) {
+                    return Memoria_RAM.getMemoria_Principal().get(pPosicion);
+                }
+                int tamano_Total_Ram = this.Memoria_RAM.getEspacio_Total();
+                int pos_Inicial_Real = pPosicion - tamano_Total_Ram;
+                return this.Disco.optener_Instruccion(pos_Inicial_Real);
+
+            case("Paginacion"):
+                int memInit = encontrarMemInit(pPosicion);
+                if (memInit == -1) return null;
+                return memoriaPaginada.obtenerInstruccion(pPosicion, memInit);
+
+            case("ParticionIgual"):
+                return Memoria_RAM.getMemoria_Principal().get(pPosicion);
+
+            case("ParticionIgualDinamica"):
+                return Memoria_RAM.getMemoria_Principal().get(pPosicion);
+
+            case("Dinamica"):
+                return Memoria_RAM.getMemoria_Principal().get(pPosicion);
+
         }
-        int tamano_Total_Ram = this.Memoria_RAM.getEspacio_Total();
-        int pos_Inicial_Real = pPosicion - tamano_Total_Ram;
-        return this.Disco.optener_Instruccion(pos_Inicial_Real);
+
+        return null;
+
+    }
+
+
+    public int getInicioParticionProceso(int pid) {
+        return controlador_MemoriaParticionada.getInicioParticionPorProceso(pid);
+    }
+
+    public int getTamanoParticionProceso(int pid) {
+        return controlador_MemoriaParticionada.getTamanoParticionPorProceso(pid);
+    }
+
+    private int encontrarMemInit(int posicion) {
+        for (int i = POSICION_INICIO_BCP; i < Memoria_RAM.getEspacio_OS(); i += TAMANO_BCP) {
+            String pidStr = Memoria_RAM.obtener_Instruccion(i);
+            if (pidStr != null && !pidStr.trim().isEmpty()) {
+                String memInitStr = Memoria_RAM.obtener_Instruccion(i + 3);
+                String memEndStr = Memoria_RAM.obtener_Instruccion(i + 4);
+                if (memInitStr != null && memEndStr != null) {
+                    try {
+                        int memInit = Integer.parseInt(memInitStr.trim());
+                        int memEnd = Integer.parseInt(memEndStr.trim());
+                        if (posicion >= memInit && posicion <= memEnd) {
+                            return memInit;
+                        }
+                    } catch (NumberFormatException e) {
+                        continue;
+                    }
+                }
+            }
+        }
+        return -1;
     }
 
     public int crear_Archivo(int pid, String nombreArchivo) {
