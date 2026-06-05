@@ -18,6 +18,8 @@ import Memoria.Modelo.*;
 
 import Config.Configuracion;
 import Config.ConfigParticion;
+import Config.ConfigKernel;
+import kernel.planificacion.AlgoritmoFCFS;
 
 public class NucleoSO {
     private Memoria memoria = null;
@@ -32,12 +34,17 @@ public class NucleoSO {
     private Controlador_MemoriaParticionada controlador_MemoriaParticionada;
 
     public NucleoSO() {
-        this.planificador = new Planificador();
+        inicializarPlanificador();
         this.controlador_MemoriaParticionada = new Controlador_MemoriaParticionada();
     }
 
-    public void configurarMemoria(String tipoMemoria) {
+    private void inicializarPlanificador() {
         this.planificador = new Planificador();
+        this.planificador.setAlgoritmoPlanificacion(new AlgoritmoFCFS());
+    }
+
+    public void configurarMemoria(String tipoMemoria) {
+        inicializarPlanificador();
         this.programa_Iniciado = false;
         this.hay_interrupcion = false;
         this.contador_ciclos = 0;
@@ -202,7 +209,7 @@ public class NucleoSO {
         }
         asignar_Almacenamiento(codigo, pNombre_Archivo);
         this.planificador.extraer_Programas_Almacenamiento(almacenamiento);
-        this.planificador.FSFS_Planificador(memoria, almacenamiento, cpu1.getTiempo_CPU());
+        this.planificador.cargarLote(memoria, almacenamiento, cpu1.getTiempo_CPU());
         this.planificador.cambiar_Estado_Proceso_Nuevo();
         System.out.println("[DEBUG CARGA] Archivo=" + pNombre_Archivo
                 + " | cola_Nuevos=" + this.planificador.getCola_Procesos_Nuevos().size()
@@ -210,7 +217,7 @@ public class NucleoSO {
                 + " | OS usado=" + memoria.getEspacio_Usado_OS()
                 + "/" + memoria.getEspacio_OS());
         if (programa_Iniciado == false) {
-            int inicio = this.planificador.get_PID_Primer_Proceso_Nuevo();
+            int inicio = this.planificador.seleccionarSiguiente();
             if (inicio != -1) {
                 iniciar_Despachador(inicio);
             } else {
@@ -268,11 +275,12 @@ public class NucleoSO {
         cpu1.modificar_PC(-1);
         this.sincronizar_Datos_CPU_Memoria_BCP();
         this.planificador.finalizacion_Procesos(memoria, pPID_Actual, this.cpu1.getTiempo_CPU());
-        this.planificador.FSFS_Planificador(memoria, almacenamiento, cpu1.getTiempo_CPU());
+        this.planificador.cargarLote(memoria, almacenamiento, cpu1.getTiempo_CPU());
+        this.planificador.cambiar_Estado_Proceso_Nuevo();
         this.cpu1.reiniciar_Datos_CPU();
         if (this.planificador.hay_Procesos_Nuevos()) {
             System.out.println("--> Controlador Principal: Hay procesos nuevos");
-            int PID_siguiente = this.planificador.get_PID_Primer_Proceso_Nuevo();
+            int PID_siguiente = this.planificador.seleccionarSiguiente();
             if (PID_siguiente != -1) {
                 iniciar_Despachador(PID_siguiente);
                 this.programa_Iniciado = true;
@@ -415,7 +423,7 @@ public class NucleoSO {
         this.contador_ciclos = 0;
         this.programa_Iniciado = false;
         this.hay_interrupcion = false;
-        this.planificador = new Planificador();
+        inicializarPlanificador();
         cargar_configuracion();
     }
 

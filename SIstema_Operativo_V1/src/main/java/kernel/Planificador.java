@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import kernel.planificacion.IAlgoritmoPlanificacion;
 import util.Calcular_Tiempo_Estimado_Programa;
 import model.Almacenamiento;
 import model.BCP;
@@ -20,6 +21,7 @@ public class Planificador {
     private List<BCP> cola_Procesos_Terminados;
     private GestorMemoria controlador_Memoria;
     private int banderaOverlay = 0;
+    private IAlgoritmoPlanificacion algoritmo;
 
 
     public Planificador() {
@@ -56,18 +58,6 @@ public class Planificador {
         this.controlador_Memoria = pNuevo_Controlador;
     }
 
-
-    public int get_PID_Primer_Proceso_Nuevo() {
-        int count = 0;
-        for (BCP bcp : this.cola_Procesos_Nuevos.values()) {
-            if (count == 0) {
-                return bcp.getPID();
-            }
-            count++;
-            break;
-        }
-        return -1;
-    }
 
     public void eliminar_Programa_Pendiente(String nombre) {
         this.cola_Programas_Pendientes.remove(nombre);
@@ -201,134 +191,130 @@ public class Planificador {
         return procesos;
     }
 
-    public void FSFS_Planificador(Memoria pMemoria_Principal, Almacenamiento pMemoria_Secundaria,
-            int pTiempo_Total_CPU) {
-        System.out.println("Planificador: Iniciando el planificador FCFS.");
-        for (int i = this.cola_Procesos_Nuevos.size(); i < 5; i++) {
-            if (this.cola_Programas_Pendientes.isEmpty()) {
-                System.out.println("Planificador: No hay programas pendientes...");
-                break;
-            }
-            System.out.println("Planificador: Agregando proceso: " + i);
-            String nombre_Programa = this.cola_Programas_Pendientes.get(0);
-            Codigo_ASM codigo = this.obtener_Programa_Almacenamiento(pMemoria_Secundaria, nombre_Programa);
-            System.out.println("Planificador: Codigo del programa: " + codigo.getContador_Intrucciones());
-            int espacio_Necesario_Programa = codigo.getContador_Intrucciones();
-            int espacio_Necesario_BCP = 26;
-            int hay_esoacio_OS = this.controlador_Memoria
-                    .validar_Espacio_Disponible_Usuario(espacio_Necesario_Programa, nombre_Programa, pMemoria_Principal);
-            int osCheck = pMemoria_Principal.validar_Espacio_Disponible_OS(espacio_Necesario_BCP);
+    /**
+     * Se crea un proceso en memoria a partir de un programa, asignandosele un ID y agreganose a la cola de nuevos.
+     * Retorna true si fue creado en memoria y false si no se pudo crear por falta de espacio.
+     * @param nombrePrograma
+     * @param codigo
+     * @param memoria
+     * @param controlador
+     * @param tiempoActualCPU
+     * @return
+     */
+    public boolean crearProcesoEnMemoria(String nombrePrograma, Codigo_ASM codigo,
+            Memoria memoria, GestorMemoria controlador, int tiempoActualCPU) {
+        int espacio_Necesario_Programa = codigo.getContador_Intrucciones();
+        int espacio_Necesario_BCP = 26;
+        int hayEspacioUser = controlador
+                .validar_Espacio_Disponible_Usuario(espacio_Necesario_Programa, nombrePrograma, memoria);
+        int osCheck = memoria.validar_Espacio_Disponible_OS(espacio_Necesario_BCP);
 
-            System.out.println("[DEBUG FSFS] i=" + i + " prog=" + nombre_Programa
-                    + " | OS usado=" + pMemoria_Principal.getEspacio_Usado_OS()
-                    + " OS max=" + pMemoria_Principal.getEspacio_OS()
-                    + " necesita=" + espacio_Necesario_BCP
-                    + " | User usado=" + pMemoria_Principal.getEspacio_Usado_Usuario()
-                    + " User max=" + pMemoria_Principal.getEspacio_Usuario()
-                    + " necesitaProg=" + espacio_Necesario_Programa
-                    + " | osCheck=" + osCheck + " userCheck=" + hay_esoacio_OS);
-            if (osCheck == 0 && hay_esoacio_OS != 0) {
-                System.out.println("Planificador: PASS 1");
-                int pid = pMemoria_Principal.asignar_Nuevo_PID_Proceso();
-                System.out.println("Planificador: PASS 2");
-                int tiempo_Estimado = Calcular_Tiempo_Estimado_Programa.calcular_Tiempo_Estimado(codigo);
-                System.out.println("Planificador: PASS 3 -> Duracion estimada: " + tiempo_Estimado);
-
-                if (hay_esoacio_OS == 3) {
-                    int totalOverlays = this.controlador_Memoria.crearOverlay(espacio_Necesario_Programa, codigo, pid);
-                    int pcInicial = this.controlador_Memoria.getInicioParticionProceso(pid);
-                    int tamParticion = this.controlador_Memoria.getTamanoParticionProceso(pid);
-                    pMemoria_Principal.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1,
-                        pTiempo_Total_CPU, tiempo_Estimado, 0, pcInicial);
-                    int posBCP = pMemoria_Principal.buscar_Posicion_BCP(pid);
-                    pMemoria_Principal.getMemoria_Principal().put(posBCP + 3, String.valueOf(pcInicial));
-                    pMemoria_Principal.getMemoria_Principal().put(posBCP + 4, String.valueOf(pcInicial + tamParticion - 1));
-                    pMemoria_Principal.getMemoria_Principal().put(posBCP + 5, String.valueOf(pcInicial));
-                    BCP nuevo_BCP = pMemoria_Principal.obtener_Datos_BCP(pid);
-                    nuevo_BCP.setTieneOverlay(true);
-                    nuevo_BCP.setTotalOverlays(totalOverlays);
-                    nuevo_BCP.setOverlayActual(0);
-                    nuevo_BCP.setNombre_Programa(nombre_Programa);
-                    nuevo_BCP.set_momento_creacion(LocalTime.now());
-                    nuevo_BCP.setPosInicioOverlayMV(this.controlador_Memoria.obtenerUltimaPosMV());
-                    this.controlador_Memoria.guardarBCP(nuevo_BCP);
-                    pMemoria_Principal.modificar_Enlace_Siguiente_BCP(pid, -1);
-                    this.agregar_Proceso_Nuevo(pid, nuevo_BCP);
-                    this.eliminar_Programa_Pendiente(nombre_Programa);
-                    continue;
-                }
-
-                int pcInicial;
-                if ("Paginacion".equals(controlador_Memoria.getTipoGestionMemoria())) {
-                    pcInicial = 0;
-                } else {
-                    pcInicial = pMemoria_Principal.getPosicion_Actual_Usuario();
-                }
-
-                int pos_MV = this.controlador_Memoria.get_Pos_Actual_MV();
-                if ("ParticionIgual".equals(controlador_Memoria.getTipoGestionMemoria())) {
-                    controlador_Memoria.asignar_Memoria_Programa(codigo, nombre_Programa, pid);
-                    pcInicial = controlador_Memoria.getInicioParticionProceso(pid);
-                    pMemoria_Principal.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1, 
-                        pTiempo_Total_CPU, tiempo_Estimado, pos_MV, pcInicial);
-                } 
-                else if ("ParticionIgualDinamica".equals(controlador_Memoria.getTipoGestionMemoria())){
-                    controlador_Memoria.asignar_Memoria_Programa(codigo, nombre_Programa, pid);
-                    pcInicial = controlador_Memoria.getInicioParticionProceso(pid);
-                    pMemoria_Principal.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1, 
-                        pTiempo_Total_CPU, tiempo_Estimado, pos_MV, pcInicial);                    
-                }
-                else if ("Dinamica".equals(controlador_Memoria.getTipoGestionMemoria())){
-                    controlador_Memoria.asignar_Memoria_Programa(codigo, nombre_Programa, pid);
-                    pcInicial = controlador_Memoria.getInicioParticionProceso(pid);
-                    pMemoria_Principal.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1, 
-                        pTiempo_Total_CPU, tiempo_Estimado, pos_MV, pcInicial);                    
-                }
-                
-                else {
-                    // Flujo que estaba antes por aquello
-                    pMemoria_Principal.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1,
-                        pTiempo_Total_CPU, tiempo_Estimado, pos_MV, pcInicial);
-                    controlador_Memoria.asignar_Memoria_Programa(codigo, nombre_Programa, pid);
-                }
-                System.out.println("Planificador: PASS 4");
-                System.out.println("Planificador: PASS 5");
-                int pid_Siguiente = 0;
-                if (i == 4) {
-                    pid_Siguiente = -1;
-                } else {
-                    pid_Siguiente = pid + 1;
-                }
-                pMemoria_Principal.modificar_Enlace_Siguiente_BCP(pid, pid_Siguiente);
-                BCP nuevo_BCP = pMemoria_Principal.obtener_Datos_BCP(pid);
-                nuevo_BCP.setNombre_Programa(nombre_Programa);
-                nuevo_BCP.set_momento_creacion(LocalTime.now());
-                System.out.println("Planificador: PASS 6");
-                this.agregar_Proceso_Nuevo(pid, nuevo_BCP);
-                System.out.println("Planificador: PASS 7");
-                this.eliminar_Programa_Pendiente(nombre_Programa);
-                System.out.println("Planificador: PASS 8");
-            } else {
-                break;
-            }
+        System.out.println("[DEBUG FSFS] prog=" + nombrePrograma
+                + " | OS usado=" + memoria.getEspacio_Usado_OS()
+                + " OS max=" + memoria.getEspacio_OS()
+                + " necesita=" + espacio_Necesario_BCP
+                + " | User usado=" + memoria.getEspacio_Usado_Usuario()
+                + " User max=" + memoria.getEspacio_Usuario()
+                + " necesitaProg=" + espacio_Necesario_Programa
+                + " | osCheck=" + osCheck + " userCheck=" + hayEspacioUser);
+        if (osCheck != 0 || hayEspacioUser == 0) {
+            return false;
         }
+        System.out.println("Planificador: PASS 1");
+        int pid = memoria.asignar_Nuevo_PID_Proceso();
+        System.out.println("Planificador: PASS 2");
+        int tiempo_Estimado = Calcular_Tiempo_Estimado_Programa.calcular_Tiempo_Estimado(codigo);
+        System.out.println("Planificador: PASS 3 -> Duracion estimada: " + tiempo_Estimado);
+
+        if (hayEspacioUser == 3) {
+            int totalOverlays = controlador.crearOverlay(espacio_Necesario_Programa, codigo, pid);
+            int pcInicial = controlador.getInicioParticionProceso(pid);
+            int tamParticion = controlador.getTamanoParticionProceso(pid);
+            memoria.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1,
+                tiempoActualCPU, tiempo_Estimado, 0, pcInicial);
+            int posBCP = memoria.buscar_Posicion_BCP(pid);
+            memoria.getMemoria_Principal().put(posBCP + 3, String.valueOf(pcInicial));
+            memoria.getMemoria_Principal().put(posBCP + 4, String.valueOf(pcInicial + tamParticion - 1));
+            memoria.getMemoria_Principal().put(posBCP + 5, String.valueOf(pcInicial));
+            BCP nuevo_BCP = memoria.obtener_Datos_BCP(pid);
+            nuevo_BCP.setTieneOverlay(true);
+            nuevo_BCP.setTotalOverlays(totalOverlays);
+            nuevo_BCP.setOverlayActual(0);
+            nuevo_BCP.setNombre_Programa(nombrePrograma);
+            nuevo_BCP.set_momento_creacion(LocalTime.now());
+            nuevo_BCP.setPosInicioOverlayMV(controlador.obtenerUltimaPosMV());
+            controlador.guardarBCP(nuevo_BCP);
+            memoria.modificar_Enlace_Siguiente_BCP(pid, -1);
+            this.agregar_Proceso_Nuevo(pid, nuevo_BCP);
+            this.eliminar_Programa_Pendiente(nombrePrograma);
+            return true;
+        }
+
+        int pcInicial;
+        if ("Paginacion".equals(controlador.getTipoGestionMemoria())) {
+            pcInicial = 0;
+        } else {
+            pcInicial = memoria.getPosicion_Actual_Usuario();
+        }
+
+        int pos_MV = controlador.get_Pos_Actual_MV();
+        if ("ParticionIgual".equals(controlador.getTipoGestionMemoria())) {
+            controlador.asignar_Memoria_Programa(codigo, nombrePrograma, pid);
+            pcInicial = controlador.getInicioParticionProceso(pid);
+            memoria.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1,
+                tiempoActualCPU, tiempo_Estimado, pos_MV, pcInicial);
+        }
+        else if ("ParticionIgualDinamica".equals(controlador.getTipoGestionMemoria())){
+            controlador.asignar_Memoria_Programa(codigo, nombrePrograma, pid);
+            pcInicial = controlador.getInicioParticionProceso(pid);
+            memoria.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1,
+                tiempoActualCPU, tiempo_Estimado, pos_MV, pcInicial);
+        }
+        else if ("Dinamica".equals(controlador.getTipoGestionMemoria())){
+            controlador.asignar_Memoria_Programa(codigo, nombrePrograma, pid);
+            pcInicial = controlador.getInicioParticionProceso(pid);
+            memoria.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1,
+                tiempoActualCPU, tiempo_Estimado, pos_MV, pcInicial);
+        }
+
+        else {
+            // Flujo que estaba antes por aquello
+            memoria.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1,
+                tiempoActualCPU, tiempo_Estimado, pos_MV, pcInicial);
+            controlador.asignar_Memoria_Programa(codigo, nombrePrograma, pid);
+        }
+        System.out.println("Planificador: PASS 4");
+        System.out.println("Planificador: PASS 5");
+        int pid_Siguiente = (this.cola_Procesos_Nuevos.size() >= 4) ? -1 : pid + 1;
+        memoria.modificar_Enlace_Siguiente_BCP(pid, pid_Siguiente);
+        BCP nuevo_BCP = memoria.obtener_Datos_BCP(pid);
+        nuevo_BCP.setNombre_Programa(nombrePrograma);
+        nuevo_BCP.set_momento_creacion(LocalTime.now());
+        System.out.println("Planificador: PASS 6");
+        this.agregar_Proceso_Nuevo(pid, nuevo_BCP);
+        System.out.println("Planificador: PASS 7");
+        this.eliminar_Programa_Pendiente(nombrePrograma);
+        System.out.println("Planificador: PASS 8");
+        return true;
     }
 
-    public void modificar_Siguiente_BCP_FCFS(Memoria pMemoria_Principal) {
-        for (int i = 0; i < 5; i++) {
-            BCP bcp = this.cola_Procesos_Nuevos.get(i);
-            int PID_Proceso_Actual = Integer.valueOf(bcp.getPID());
-            int pid_Siguiente = 0;
-            if (i == 4) {
-                pid_Siguiente = -1;
-            } else {
-                pid_Siguiente = PID_Proceso_Actual + 1;
-            }
-            pMemoria_Principal.modificar_Enlace_Siguiente_BCP(PID_Proceso_Actual, pid_Siguiente);
-            BCP bcp_Actual = pMemoria_Principal.obtener_Datos_BCP(PID_Proceso_Actual);
-            bcp_Actual.setNombre_Programa(bcp.getNombre_Programa());
-            this.cola_Procesos_Nuevos.put(PID_Proceso_Actual, bcp_Actual);
+    public void setAlgoritmoPlanificacion(IAlgoritmoPlanificacion algoritmo) {
+        this.algoritmo = algoritmo;
+    }
+
+    public void cargarLote(Memoria memoria, Almacenamiento almacenamiento, int tiempoActualCPU) {
+        if (this.algoritmo == null) {
+            System.out.println("Planificador: No hay algoritmo configurado.");
+            return;
         }
+        this.algoritmo.cargarLote(this, memoria, almacenamiento, this.controlador_Memoria, tiempoActualCPU);
+    }
+
+    public int seleccionarSiguiente() {
+        if (this.algoritmo == null) {
+            return -1;
+        }
+        return this.algoritmo.seleccionarSiguiente(this);
     }
 
     public boolean hay_Procesos_Nuevos() {
