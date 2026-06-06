@@ -20,7 +20,7 @@ public class Memoria {
     public Memoria(int pTamano_Memoria) {
         this.Memoria_Principal = new HashMap<>(pTamano_Memoria);
         this.espacio_Total = pTamano_Memoria;
-        int minOS = TAMANO_BCP;
+        int minOS = 5 * TAMANO_BCP;
         this.espacio_OS = Math.max((int) (pTamano_Memoria * 0.2), minOS);
         this.espacio_Usuario = pTamano_Memoria - this.espacio_OS;
         this.posicion_Actual_Usuario = this.espacio_OS;
