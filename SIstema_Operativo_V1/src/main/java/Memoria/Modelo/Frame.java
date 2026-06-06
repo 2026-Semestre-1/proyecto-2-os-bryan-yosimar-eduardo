@@ -7,6 +7,7 @@ public class Frame {
     int numFrame;
     int direccionBase;
     private Pagina pagina;
+    int tiempoCarga;
 
 
     public Frame (String id, int tamano){
@@ -46,4 +47,13 @@ public class Frame {
     public void setDireccionBase(int direccionBase) {
         this.direccionBase = direccionBase;
     }
+    
+    public int getTiempoCarga(){
+        return tiempoCarga;
+    }
+    
+     public int setTiempoCarga(int tiempo){
+        tiempoCarga = tiempo;
+        return tiempoCarga;
+    }       
 }

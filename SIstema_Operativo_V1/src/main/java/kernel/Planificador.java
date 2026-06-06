@@ -281,6 +281,12 @@ public class Planificador {
             // Flujo que estaba antes por aquello
             memoria.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1,
                 tiempoActualCPU, tiempo_Estimado, pos_MV, pcInicial);
+            if ("Paginacion".equals(controlador.getTipoGestionMemoria())) {
+                int posBCP = memoria.buscar_Posicion_BCP(pid);
+                memoria.getMemoria_Principal().put(posBCP + 3, String.valueOf(pcInicial));
+                memoria.getMemoria_Principal().put(posBCP + 4, String.valueOf(pcInicial + espacio_Necesario_Programa - 1));
+                memoria.getMemoria_Principal().put(posBCP + 5, String.valueOf(pcInicial));
+            }
             controlador.asignar_Memoria_Programa(codigo, nombrePrograma, pid);
         }
         System.out.println("Planificador: PASS 4");

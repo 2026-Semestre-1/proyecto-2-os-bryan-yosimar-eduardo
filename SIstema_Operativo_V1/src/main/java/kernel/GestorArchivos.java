@@ -71,7 +71,7 @@ public class GestorArchivos {
             }
             Configuracion config = mapper.readValue(is, Configuracion.class);
 
-            if (config.getMemoria() < 512 || config.getAlmacenamiento() < 512 || config.getMemoria_Virtual() < 64
+            if (config.getMemoria() < 1 || config.getAlmacenamiento() < 512 || config.getMemoria_Virtual() < 64
                     || config.getCant_CPU() < 1) {
                 System.out.println("Valores no permitidos en el archivo de configuracion.");
                 return null;

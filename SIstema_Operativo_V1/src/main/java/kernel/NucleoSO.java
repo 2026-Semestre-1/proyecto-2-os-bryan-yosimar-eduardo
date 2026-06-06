@@ -123,6 +123,8 @@ public class NucleoSO {
         this.memoriaPaginada = new MemoriaPaginada(pageSize, cantidadFrames);
         this.memoriaPaginada.inicializar(memoria.getEspacio_OS());
         this.memoriaPaginada.setMemoriaPrincipal(memoria.getMemoria_Principal());
+        this.memoriaPaginada.setMemoriaSecundaria(almacenamiento.getMemoria_Secundaria());
+        this.memoriaPaginada.setPosicionMV(almacenamiento.getPosicion_Memoria_Virtual());
     }
 
     public void crear_memoriaParticionFijajIgual(int tamanoMemoria) {

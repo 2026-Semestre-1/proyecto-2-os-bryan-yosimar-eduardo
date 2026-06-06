@@ -19,10 +19,41 @@ public class MemoriaPaginada {
     Map<Integer, String> memoriaPrincipal;
     List<TablaDePagina> tablaDePaginas;
     int contadorIdFrame = 0;
+    int contadorCarga = 0;
+    Map<Integer, String> memoriaSecundaria;
+    int posicionMV;
 
     public void setMemoriaPrincipal(Map<Integer, String> memoriaPrincipal) {
         this.memoriaPrincipal = memoriaPrincipal;
     }
+    
+    public void setMemoriaSecundaria(Map<Integer, String> memoriaSecundaria) {
+        this.memoriaSecundaria = memoriaSecundaria;
+    }
+    
+    public Map<Integer, String> getMemoriaSecundaria() {
+        return memoriaSecundaria;
+    }
+    
+    public int getPosicionMV(){
+        return posicionMV;
+    }
+    
+    public int setPosicionMV(int pos){
+       posicionMV = pos;
+       return posicionMV;
+    }
+
+    
+    public int getContadorCarga(){
+        return contadorCarga;
+    }
+    
+    public int setContadorCarga(int cont){
+        contadorCarga = cont;
+        return contadorCarga;
+    }    
+    
 
     public MemoriaPaginada(int pageSize, int numFrames) {
         this.pageSize = pageSize;
@@ -50,57 +81,84 @@ public class MemoriaPaginada {
         return disponibles >= cantidadPaginas;
     }
 
-    public boolean asignarProceso(Codigo_ASM codigoASM, String nombreProceso) {
-        int numPagina = 0;
-        int cantidadPaginas = (int) Math.ceil((double)codigoASM.getContador_Intrucciones() / pageSize);
-        if (!hayFramesDisponibles(cantidadPaginas)) return false;
+public boolean asignarProceso(Codigo_ASM codigoASM, String nombreProceso) {
+    int numPagina = 0;
+    int cantidadPaginas = (int) Math.ceil((double)codigoASM.getContador_Intrucciones() / pageSize);
 
-        ArrayList<Pagina> listaPaginas = new ArrayList<>();
-        int x = 0;
-        List<String> todas = new ArrayList<>();
-        while(x < codigoASM.getContador_Intrucciones()){
-            todas.add(codigoASM.getInstrucciones().get(x).get_Intruccion_Completa());  
-            x++;
-        }
-        int total = todas.size();
-        for (int i = 0; i < total; i += pageSize) {
-            int fin = Math.min(i + pageSize, total);
-            List<String> grupo = todas.subList(i, fin);
-            Pagina pagina = new Pagina(grupo, pageSize, numPagina);
-            listaPaginas.add(pagina);
-            numPagina++;
-        }
+    ArrayList<Pagina> listaPaginas = new ArrayList<>();
+    int x = 0;
+    List<String> todas = new ArrayList<>();
+    while(x < codigoASM.getContador_Intrucciones()){
+        todas.add(codigoASM.getInstrucciones().get(x).get_Intruccion_Completa());  
+        x++;
+    }
+    int total = todas.size();
+    for (int i = 0; i < total; i += pageSize) {
+        int fin = Math.min(i + pageSize, total);
+        List<String> grupo = todas.subList(i, fin);
+        Pagina pagina = new Pagina(grupo, pageSize, numPagina);
+        listaPaginas.add(pagina);
+        numPagina++;
+    }
 
-        for (int j = 0; j < cantidadPaginas; j++) {
-            int indiceBitLibre = bitmap.nextClearBit(0);
-            Frame frame = frames[indiceBitLibre]; // Utilizamos el bitmap para usar la posicion libre
-            listaPaginas.get(j).asignarFrame(frame); //Agregamos a lsitaPaginas
+    // Aqui asignamos en ram o disco dependiendo de si pasa la condicion
+    for (int j = 0; j < cantidadPaginas; j++) {
+        int indiceBitLibre = bitmap.nextClearBit(0);
+        if (indiceBitLibre < numFrames) {
+            // En este caso si los frames alcanzan va para ram 
+            Frame frame = frames[indiceBitLibre];
+            Pagina pagina = listaPaginas.get(j);
+            pagina.asignarFrame(frame);
             frame.setProcesoDueno(nombreProceso);
-            bitmap.set(indiceBitLibre); // Se marca ocupado
-            TablaDePagina tabla = new TablaDePagina(nombreProceso, listaPaginas.get(j).getNumPagina(), frame.getNumFrame(), true);
-            tablaDePaginas.add(tabla); // Agregmaos el proceso a la tabla de paginas
-            frame.setPagina(listaPaginas.get(j)); // Agregamso pagina al frame
-            List<String> contenido = listaPaginas.get(j).getContenido();
-            for (int k = 0; k < contenido.size(); k++) { // Escribimos en ram las instrucciones de la pag
+            bitmap.set(indiceBitLibre);
+            frame.setTiempoCarga(contadorCarga++);
+            frame.setPagina(pagina);
+
+            TablaDePagina tabla = new TablaDePagina(nombreProceso, pagina.getNumPagina(), frame.getNumFrame(), true);
+            tablaDePaginas.add(tabla);
+
+            List<String> contenido = pagina.getContenido();
+            for (int k = 0; k < contenido.size(); k++) {
                 memoriaPrincipal.put(frame.getDireccionBase() + k, contenido.get(k));
             }
+        } else {
+            //Sino alcanza pues va pa disco
+            Pagina pagina = listaPaginas.get(j);
+            TablaDePagina tabla = new TablaDePagina(nombreProceso, pagina.getNumPagina(), -1, false);
+            tabla.setDireccionDisco(posicionMV);
+            tablaDePaginas.add(tabla);
+
+            List<String> contenido = pagina.getContenido();
+            for (int k = 0; k < contenido.size(); k++) {
+                memoriaSecundaria.put(posicionMV + k, contenido.get(k));
+            }
+            posicionMV += pageSize;
         }
-        return true;
     }
+    return true;
+}
 
     public void liberarProceso(String nombreProceso) {
         for (int i = 0; i < tablaDePaginas.size(); i++) {
             if (nombreProceso.equals(tablaDePaginas.get(i).getNombreProceso())) {
-                int numFrame = tablaDePaginas.get(i).getNumeroDeFrame();
-                for (int j = 0; j < numFrames; j++) {
-                    if (frames[j] != null && frames[j].getNumFrame() == numFrame) {
-                        Frame f = frames[j];
-                        for (int k = 0; k < pageSize; k++) { // Quitamos de la ram las instrucciones
-                            memoriaPrincipal.remove(f.getDireccionBase() + k);
+                TablaDePagina pagina = tablaDePaginas.get(i);
+                int numFrame = pagina.getNumeroDeFrame();
+                if (numFrame != -1) {
+                    for (int j = 0; j < numFrames; j++) {
+                        if (frames[j] != null && frames[j].getNumFrame() == numFrame) {
+                            Frame f = frames[j];
+                            for (int k = 0; k < pageSize; k++) {
+                                memoriaPrincipal.remove(f.getDireccionBase() + k);
+                            }
+                            bitmap.set(j, false);
+                            frames[j].setProcesoDueno(null);
+                            frames[j].setPagina(null);
                         }
-                        bitmap.set(j, false);
-                        frames[j].setProcesoDueno(null);
-                        frames[j].setPagina(null);
+                    }
+                }
+                if (pagina.getDireccionDisco() != -1) {
+                    for (int k = 0; k < pageSize; k++) {
+                        memoriaSecundaria.remove(pagina.getDireccionDisco() + k);
                     }
                 }
                 tablaDePaginas.remove(i);
@@ -113,14 +171,67 @@ public class MemoriaPaginada {
         int offsetRelativo = posicionLogica - memInit;
         int numPagina = offsetRelativo / pageSize;
         int offset = offsetRelativo % pageSize;
-        for (TablaDePagina tabla : tablaDePaginas) {
-            if (tabla.getNumeroDePagina() == numPagina) {
-                int numFrame = tabla.getNumeroDeFrame();
-                for (Frame f : frames) {
-                    if (f != null && f.getNumFrame() == numFrame) {
-                        int dirFisica = f.getDireccionBase() + offset;
-                        return memoriaPrincipal.get(dirFisica);
+        for (TablaDePagina paginaFaltante : tablaDePaginas) {
+            if (paginaFaltante.getNumeroDePagina() == numPagina) {
+                if (paginaFaltante.hayBitPresencia()) {
+                    int numFrame = paginaFaltante.getNumeroDeFrame();
+                    for (Frame f : frames) {
+                        if (f != null && f.getNumFrame() == numFrame) {
+                            int dirFisica = f.getDireccionBase() + offset;
+                            return memoriaPrincipal.get(dirFisica);
+                        }
                     }
+                } else {
+                    // parte del page fault
+                    Frame cambio = frames[0];
+                    for (Frame f : frames) {
+                        if (f.getTiempoCarga() < cambio.getTiempoCarga()) {
+                            cambio = f;
+                        }
+                    }
+
+                    // Guardar página a cambiar a disco si no tiene copia
+                    for (TablaDePagina paginaCambio : tablaDePaginas) {
+                        if (paginaCambio.getNumeroDeFrame() == cambio.getNumFrame()) {
+                            if (paginaCambio.getDireccionDisco() == -1) {
+                                for (int k = 0; k < pageSize; k++) {
+                                    String dato = memoriaPrincipal.get(cambio.getDireccionBase() + k);
+                                    if (dato != null) {
+                                        memoriaSecundaria.put(posicionMV + k, dato);
+                                    }
+                                    memoriaPrincipal.remove(cambio.getDireccionBase() + k);
+                                }
+                                paginaCambio.setDireccionDisco(posicionMV);
+                                posicionMV += pageSize;
+                            } else {
+                                for (int k = 0; k < pageSize; k++) {
+                                    memoriaPrincipal.remove(cambio.getDireccionBase() + k);
+                                }
+                            }
+                            paginaCambio.setBitPresencia(false);
+                            paginaCambio.setNumeroDeFrame(-1);
+                            break;
+                        }
+                    }
+
+                    // Cargar página faltante desde disco al frame
+                    for (int k = 0; k < pageSize; k++) {
+                        String inst = memoriaSecundaria.get(paginaFaltante.getDireccionDisco() + k);
+                        if (inst != null) {
+                            memoriaPrincipal.put(cambio.getDireccionBase() + k, inst);
+                        }
+                        memoriaSecundaria.remove(paginaFaltante.getDireccionDisco() + k);
+                    }
+
+                    // Actualizar tabla de página faltante y frame
+                    paginaFaltante.setBitPresencia(true);
+                    paginaFaltante.setNumeroDeFrame(cambio.getNumFrame());
+                    paginaFaltante.setDireccionDisco(-1);
+                    cambio.setTiempoCarga(contadorCarga++);
+                    cambio.setProcesoDueno(paginaFaltante.getNombreProceso());
+
+                    int dirFisica = cambio.getDireccionBase() + offset;
+                    return memoriaPrincipal.get(dirFisica);
                 }
             }
         }
