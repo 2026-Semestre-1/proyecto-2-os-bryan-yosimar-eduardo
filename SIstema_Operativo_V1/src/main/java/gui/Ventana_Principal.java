@@ -216,8 +216,9 @@ public class Ventana_Principal extends javax.swing.JFrame {
                 Tabla_Frames = new javax.swing.JTable();
                 Tabla_Frames.setModel(new DefaultTableModel(
                         new Object[][] {},
-                        new String[] { "Frame", "Estado", "Proceso" }
+                        new String[] { "Frame", "Estado", "Proceso", "Rango Direcciones" }
                 ));
+                Tabla_Frames.getColumnModel().getColumn(3).setPreferredWidth(120);
                 jScrollPane7 = new javax.swing.JScrollPane(Tabla_Frames);
 
                 Tabla_Tablas_Paginas = new javax.swing.JTable();
@@ -739,9 +740,10 @@ public class Ventana_Principal extends javax.swing.JFrame {
                                                 }
                                         }
                                 }
-                                modeloTabla.addRow(new Object[] { f.getNumFrame(), estado, proceso });
+                                String rango = f.getDireccionBase() + " - " + (f.getDireccionBase() + memoriaPaginada.getPageSize() - 1);
+                        modeloTabla.addRow(new Object[] { f.getNumFrame(), estado, proceso, rango });
                         } else {
-                                modeloTabla.addRow(new Object[] { i, "Libre", "" });
+                                modeloTabla.addRow(new Object[] { i, "Libre", "", "" });
                         }
                 }
         }

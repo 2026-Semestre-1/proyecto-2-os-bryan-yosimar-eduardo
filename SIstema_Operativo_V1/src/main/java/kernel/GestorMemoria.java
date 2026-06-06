@@ -112,7 +112,8 @@ public class GestorMemoria {
                 }
 
             case "Paginacion":
-                int cantidadPaginas = (int) Math.ceil((double)codigoASM.getContador_Intrucciones() / 16);
+                int pageSize = memoriaPaginada.getPageSize();
+                int cantidadPaginas = (int) Math.ceil((double)codigoASM.getContador_Intrucciones() / pageSize);
                 if (memoriaPaginada.hayFramesDisponibles(cantidadPaginas)) {
                     memoriaPaginada.asignarProceso(codigoASM, nombreProceso);
                     return 0;
@@ -267,7 +268,7 @@ public class GestorMemoria {
                 return 0;
 
             case "Paginacion":
-                int cantidadPaginas = (int) Math.ceil((double) tamano / 16);
+                int cantidadPaginas = (int) Math.ceil((double) tamano / memoriaPaginada.getPageSize());
                 if (memoriaPaginada.hayFramesDisponibles(cantidadPaginas)) {
                     return 1;
                 } else {

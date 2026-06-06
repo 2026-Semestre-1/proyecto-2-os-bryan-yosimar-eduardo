@@ -5,6 +5,7 @@ import Memoria.Modelo.Frame;
 import Memoria.Modelo.TablaDePagina;
 import java.util.BitSet;
 import java.util.List;
+import java.util.Map;
 import java.util.ArrayList;
 import model.Codigo_ASM;
 import model.Instruccion;
@@ -14,9 +15,15 @@ public class MemoriaPaginada {
     BitSet bitmap;
     int pageSize;
     int numFrames;
+    int espacioOS;
+    Map<Integer, String> memoriaPrincipal;
     List<TablaDePagina> tablaDePaginas;
     int contadorIdFrame = 0;
-    int numPagina = 1;
+
+    public void setMemoriaPrincipal(Map<Integer, String> memoriaPrincipal) {
+        this.memoriaPrincipal = memoriaPrincipal;
+    }
+
     public MemoriaPaginada(int pageSize, int numFrames) {
         this.pageSize = pageSize;
         this.numFrames = numFrames;
@@ -25,10 +32,12 @@ public class MemoriaPaginada {
         this.tablaDePaginas = new ArrayList<>();
     }
 
-    public void inicializar() {
+    public void inicializar(int espacioOS) {
+        this.espacioOS = espacioOS;
         for (int i = 0; i < numFrames; i++) {
             frames[i] = new Frame("Frame" + contadorIdFrame, pageSize);
             frames[i].setNumFrame(contadorIdFrame);
+            frames[i].setDireccionBase(espacioOS + (i * pageSize)); // El i es mi número de frame
             contadorIdFrame++;
         }
     }
@@ -64,12 +73,17 @@ public class MemoriaPaginada {
 
         for (int j = 0; j < cantidadPaginas; j++) {
             int indiceBitLibre = bitmap.nextClearBit(0);
-            listaPaginas.get(j).asignarFrame(frames[indiceBitLibre]);
-            frames[indiceBitLibre].setProcesoDueno(nombreProceso);
-            bitmap.set(indiceBitLibre);
-            TablaDePagina tabla = new TablaDePagina(nombreProceso, listaPaginas.get(j).getNumPagina(), frames[indiceBitLibre].getNumFrame(), true);
-            tablaDePaginas.add(tabla);
-            frames[indiceBitLibre].setPagina(listaPaginas.get(j));
+            Frame frame = frames[indiceBitLibre]; // Utilizamos el bitmap para usar la posicion libre
+            listaPaginas.get(j).asignarFrame(frame); //Agregamos a lsitaPaginas
+            frame.setProcesoDueno(nombreProceso);
+            bitmap.set(indiceBitLibre); // Se marca ocupado
+            TablaDePagina tabla = new TablaDePagina(nombreProceso, listaPaginas.get(j).getNumPagina(), frame.getNumFrame(), true);
+            tablaDePaginas.add(tabla); // Agregmaos el proceso a la tabla de paginas
+            frame.setPagina(listaPaginas.get(j)); // Agregamso pagina al frame
+            List<String> contenido = listaPaginas.get(j).getContenido();
+            for (int k = 0; k < contenido.size(); k++) { // Escribimos en ram las instrucciones de la pag
+                memoriaPrincipal.put(frame.getDireccionBase() + k, contenido.get(k));
+            }
         }
         return true;
     }
@@ -80,6 +94,10 @@ public class MemoriaPaginada {
                 int numFrame = tablaDePaginas.get(i).getNumeroDeFrame();
                 for (int j = 0; j < numFrames; j++) {
                     if (frames[j] != null && frames[j].getNumFrame() == numFrame) {
+                        Frame f = frames[j];
+                        for (int k = 0; k < pageSize; k++) { // Quitamos de la ram las instrucciones
+                            memoriaPrincipal.remove(f.getDireccionBase() + k);
+                        }
                         bitmap.set(j, false);
                         frames[j].setProcesoDueno(null);
                         frames[j].setPagina(null);
@@ -99,8 +117,9 @@ public class MemoriaPaginada {
             if (tabla.getNumeroDePagina() == numPagina) {
                 int numFrame = tabla.getNumeroDeFrame();
                 for (Frame f : frames) {
-                    if (f != null && f.getNumFrame() == numFrame && f.getPagina() != null) {
-                        return f.getPagina().getContenido().get(offset);
+                    if (f != null && f.getNumFrame() == numFrame) {
+                        int dirFisica = f.getDireccionBase() + offset;
+                        return memoriaPrincipal.get(dirFisica);
                     }
                 }
             }
@@ -112,6 +131,8 @@ public class MemoriaPaginada {
         return frames;
     }
 
+    
+    // Esto es pa ver la info de los frames
     public List<Object[]> obtenerResumenFrames() {
         List<Object[]> resumen = new ArrayList<>();
         for (int i = 0; i < numFrames; i++) {
@@ -121,11 +142,13 @@ public class MemoriaPaginada {
                     && !frame.getPagina().getContenido().isEmpty()) {
                 contenido = String.join(" ", frame.getPagina().getContenido());
             }
+            String rango = (frame != null) ? (frame.getDireccionBase() + " - " + (frame.getDireccionBase() + pageSize - 1)) : "-";
             resumen.add(new Object[] {
                     frame != null ? frame.getNumFrame() : i,
                     bitmap.get(i) ? "Ocupado" : "Libre",
                     frame != null && frame.getProcesoDueno() != null ? frame.getProcesoDueno() : "-",
-                    contenido
+                    contenido,
+                    rango
             });
         }
         return resumen;
