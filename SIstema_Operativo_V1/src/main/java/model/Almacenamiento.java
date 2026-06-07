@@ -222,6 +222,10 @@ public class Almacenamiento {
         return optener_Indices().containsKey(pNombre_Archivo);
     }
 
+    public List<String> obtenerNombresArchivos() {
+        return new ArrayList<>(optener_Indices().keySet());
+    }
+
     public int espacio_Disponible_Indices() {
         return this.espacio_Indices - this.espacio_Usado_Indices;
     }
