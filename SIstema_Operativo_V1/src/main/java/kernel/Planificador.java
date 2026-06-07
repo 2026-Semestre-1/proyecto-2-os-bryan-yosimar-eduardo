@@ -22,6 +22,7 @@ public class Planificador {
     private GestorMemoria controlador_Memoria;
     private int banderaOverlay = 0;
     private IAlgoritmoPlanificacion algoritmo;
+    private int quantum = 0;
     private static final int TAMANO_BCP = 28;
 
     public Planificador() {
@@ -68,6 +69,14 @@ public class Planificador {
 
     public void eliminar_Proceso_Terminado(int pid) {
         this.cola_Procesos_Terminados.remove(pid);
+    }
+
+    public void setQuantum(int pQuantum) {
+        this.quantum = pQuantum;
+    }
+
+    public int getQuantum() {
+        return this.quantum;
     }
 
     public Codigo_ASM obtener_Programa_Almacenamiento(Almacenamiento pMemoria_Secundaria, String pNombre_Programa) {
