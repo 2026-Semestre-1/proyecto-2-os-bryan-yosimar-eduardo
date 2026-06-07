@@ -10,7 +10,6 @@ import model.Almacenamiento;
 import model.BCP;
 import model.Codigo_ASM;
 import model.Memoria;
-import util.Parser_String_To_Int;
 
 public class AlgoritmoSJF implements IAlgoritmoPlanificacion {
 
@@ -67,7 +66,7 @@ public class AlgoritmoSJF implements IAlgoritmoPlanificacion {
             if (!"Preparado".equals(estado) && !"En Ejecuccion".equals(estado))
                 continue;
 
-            int dur = Parser_String_To_Int.parseStringToInt(bcp.getTiempo_Ejecucion());
+            int dur = parseStringToInt(bcp.getTiempo_Ejecucion());
             // int llegada = parseStringToInt(bcp.getTiempo_Llegada());
 
             if (dur < bestDur) {
@@ -82,6 +81,25 @@ public class AlgoritmoSJF implements IAlgoritmoPlanificacion {
     @Override
     public String getNombre() {
         return "SJF";
+    }
+
+    /**
+     * Nombre: parseStringToInt
+     * 
+     * Descripcion: Esta funcion es un parser seguro para convertir a un valor
+     * entero un string.
+     * 
+     * @param s (String): El string que se desea convertir a un valor entero.
+     * @return (Integer): El valor entero del string.
+     */
+    private Integer parseStringToInt(String s) {
+        try {
+            if (s == null || s.isEmpty())
+                return Integer.MAX_VALUE;
+            return Integer.parseInt(s);
+        } catch (NumberFormatException ex) {
+            return Integer.MAX_VALUE;
+        }
     }
 
 }
