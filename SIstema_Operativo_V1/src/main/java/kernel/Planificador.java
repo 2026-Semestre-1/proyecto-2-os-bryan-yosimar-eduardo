@@ -22,6 +22,7 @@ public class Planificador {
     private GestorMemoria controlador_Memoria;
     private int banderaOverlay = 0;
     private IAlgoritmoPlanificacion algoritmo;
+    private int maxProcesosSimultaneos = 5;
     private static final int TAMANO_BCP = 28;
 
     public Planificador() {
@@ -40,6 +41,14 @@ public class Planificador {
 
     public List<BCP> getCola_Procesos_Terminados() {
         return cola_Procesos_Terminados;
+    }
+
+    public int getMaxProcesosSimultaneos() {
+        return maxProcesosSimultaneos;
+    }
+
+    public void setMaxProcesosSimultaneos(int maxProcesosSimultaneos) {
+        this.maxProcesosSimultaneos = maxProcesosSimultaneos;
     }
 
     public void agregar_Programa_Pendiente(String nombre) {
@@ -178,9 +187,9 @@ public class Planificador {
             procesos.put(pid, estado);
             cant_Procesos++;
         }
-        if (cant_Procesos < 5) {
+        if (cant_Procesos < this.maxProcesosSimultaneos) {
             for (int i = 0; i < this.cola_Programas_Pendientes.size(); i++) {
-                if (cant_Procesos == 5) {
+                if (cant_Procesos == this.maxProcesosSimultaneos) {
                     break;
                 }
                 int pid = this.controlador_Memoria.get_Nuevo_PID();
