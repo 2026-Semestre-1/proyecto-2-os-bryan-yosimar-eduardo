@@ -15,12 +15,11 @@ import java.util.Map;
 import kernel.Controlador_MemoriaParticionada;
 import Memoria.Modelo.*;
 
-
 import Config.Configuracion;
 import Config.ConfigParticion;
 import Config.ConfigPaginacion;
 import Config.ConfigKernel;
-import kernel.planificacion.AlgoritmoFCFS;
+import kernel.planificacion.*;
 
 public class NucleoSO {
     private Memoria memoria = null;
@@ -41,7 +40,66 @@ public class NucleoSO {
 
     private void inicializarPlanificador() {
         this.planificador = new Planificador();
-        this.planificador.setAlgoritmoPlanificacion(new AlgoritmoFCFS());
+
+        // Esta árte se pasa a la funcionalidad de abajo para que el
+        // usuario pueda elegir el algoritmo de planificacion.
+        // this.planificador.setAlgoritmoPlanificacion(new AlgoritmoFCFS());
+    }
+
+    // Seccion para la configuracion de los algoritmos de planificacion y el quantum
+    // establecido.
+
+    /**
+     * Configura el algoritmo de planificación en el planificador.
+     * 
+     * @param nombreAlgoritmo Nombre del algoritmo seleccionado ("FCFS", "SJF",
+     *                        etc.)
+     */
+    public void configurarAlgoritmoPlanificacion(String nombreAlgoritmo) {
+        if (this.planificador == null)
+            return;
+
+        IAlgoritmoPlanificacion alg;
+        switch (nombreAlgoritmo) {
+            case "FCFS":
+                alg = new AlgoritmoFCFS();
+                break;
+            case "SJF":
+                alg = new AlgoritmoSJF();
+                break;
+            case "RR":
+                alg = new AlgoritmoRR();
+                break;
+            case "SRR":
+                alg = new AlgoritmoSRR();
+                break;
+            case "SRT":
+                alg = new AlgoritmoSRT();
+                break;
+            case "HRRN":
+                alg = new AlgoritmoHRRN();
+                break;
+            case "Lottery":
+                alg = new AlgoritmoLotery();
+                break;
+            default:
+                alg = new AlgoritmoFCFS();
+                break;
+        }
+        this.planificador.setAlgoritmoPlanificacion(alg);
+        System.out.println("[PLANIFICADOR] Algoritmo cambiado a: " + nombreAlgoritmo);
+    }
+
+    /**
+     * Configura el valor del Quantum en el planificador.
+     * 
+     * @param quantum Valor del quantum
+     */
+    public void configurarQuantum(int quantum) {
+        if (this.planificador != null) {
+            this.planificador.setQuantum(quantum);
+            System.out.println("[PLANIFICADOR] Quantum configurado a: " + quantum);
+        }
     }
 
     public void configurarMemoria(String tipoMemoria) {
@@ -49,7 +107,7 @@ public class NucleoSO {
         this.programa_Iniciado = false;
         this.hay_interrupcion = false;
         this.contador_ciclos = 0;
-        switch(tipoMemoria) {
+        switch (tipoMemoria) {
             case "Paginacion":
                 Configuracion config = GestorArchivos.cargarConfiguracion();
                 if (config == null) {
@@ -74,13 +132,14 @@ public class NucleoSO {
                     System.out.println("Error: No se pudo cargar la configuracion.");
                     return;
                 }
-                crear_almacenamiento(config2.getAlmacenamiento(), config2.getMemoria_Virtual(), 20);   
-                crear_memoriaParticionFijajIgual(config2.getMemoria()); 
-                this.controlador_Memoria = new GestorMemoria(memoria, almacenamiento, controlador_MemoriaParticionada, "ParticionIgual");
+                crear_almacenamiento(config2.getAlmacenamiento(), config2.getMemoria_Virtual(), 20);
+                crear_memoriaParticionFijajIgual(config2.getMemoria());
+                this.controlador_Memoria = new GestorMemoria(memoria, almacenamiento, controlador_MemoriaParticionada,
+                        "ParticionIgual");
                 this.planificador.setControlador_Memoria(controlador_Memoria);
-                crear_CPU(config2.getCant_CPU());              
-                break; 
-                
+                crear_CPU(config2.getCant_CPU());
+                break;
+
             case "ParticionIgualDinamica":
                 this.memoriaPaginada = null;
                 Configuracion config3 = GestorArchivos.cargarConfiguracion();
@@ -88,13 +147,14 @@ public class NucleoSO {
                     System.out.println("Error: No se pudo cargar la configuracion.");
                     return;
                 }
-                crear_almacenamiento(config3.getAlmacenamiento(), config3.getMemoria_Virtual(), 20);   
-                crear_memoriaParticionFijaTamanosDimanicos(config3.getMemoria()); 
-                this.controlador_Memoria = new GestorMemoria(memoria, almacenamiento, controlador_MemoriaParticionada, "ParticionIgualDinamica");
+                crear_almacenamiento(config3.getAlmacenamiento(), config3.getMemoria_Virtual(), 20);
+                crear_memoriaParticionFijaTamanosDimanicos(config3.getMemoria());
+                this.controlador_Memoria = new GestorMemoria(memoria, almacenamiento, controlador_MemoriaParticionada,
+                        "ParticionIgualDinamica");
                 this.planificador.setControlador_Memoria(controlador_Memoria);
-                crear_CPU(config3.getCant_CPU());              
-                break;    
-                
+                crear_CPU(config3.getCant_CPU());
+                break;
+
             case "Dinamica":
                 this.memoriaPaginada = null;
                 Configuracion config4 = GestorArchivos.cargarConfiguracion();
@@ -104,12 +164,11 @@ public class NucleoSO {
                 }
                 crear_almacenamiento(config4.getAlmacenamiento(), config4.getMemoria_Virtual(), 20);
                 crear_memoriaDinamica(config4.getMemoria()); // ← solo crea RAM vacía
-                this.controlador_Memoria = new GestorMemoria(memoria, almacenamiento, 
-                    controlador_MemoriaParticionada, "Dinamica");
+                this.controlador_Memoria = new GestorMemoria(memoria, almacenamiento,
+                        controlador_MemoriaParticionada, "Dinamica");
                 this.planificador.setControlador_Memoria(controlador_Memoria);
                 crear_CPU(config4.getCant_CPU());
-                break;               
-
+                break;
 
         }
     }
@@ -137,7 +196,6 @@ public class NucleoSO {
         controlador_MemoriaParticionada.inicializarParticionesFijasIguales(posInicioUsuario, tamanoMemoria, tamanoFijo);
     }
 
-
     public void crear_memoriaParticionFijaTamanosDimanicos(int tamanoMemoria) {
         this.memoria = new Memoria(tamanoMemoria);
         int posInicioUsuario = memoria.getPosicion_Actual_Usuario();
@@ -145,18 +203,20 @@ public class NucleoSO {
         this.memoria.soloKernel();
         try {
             ConfigParticion configPart = GestorArchivos.cargarConfigParticion();
-            List<Integer> porcentajes = (configPart != null) ? configPart.getDinamica() : Arrays.asList(8, 12, 17, 25, 38);
-            controlador_MemoriaParticionada.inicializarParticionesFijasDistribucion(posInicioUsuario, espacioUsuario, tamanoMemoria, porcentajes);
+            List<Integer> porcentajes = (configPart != null) ? configPart.getDinamica()
+                    : Arrays.asList(8, 12, 17, 25, 38);
+            controlador_MemoriaParticionada.inicializarParticionesFijasDistribucion(posInicioUsuario, espacioUsuario,
+                    tamanoMemoria, porcentajes);
         } catch (Exception e) {
             System.out.println("Error al inicializar particiones fijas dinamicas: " + e.getMessage());
             e.printStackTrace();
         }
-    }   
-    
+    }
+
     public void crear_memoriaDinamica(int tamanoMemoria) {
         this.memoria = new Memoria(tamanoMemoria);
         this.memoria.soloKernel();
-    }    
+    }
 
     public int cargar_configuracion() {
         Configuracion config = GestorArchivos.cargarConfiguracion();
