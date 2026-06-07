@@ -3,9 +3,11 @@ package Memoria.Modelo;
 public class Frame {
     String id;
     int tamano;
-    String procesoDueno = null;  // Aqui seria para el ID del proceso como tal 
-    int numFrame; // Este numero de frame es para saber a que frame se asigna la pagina, es decir, el numero del frame en la memoria fisica
+    String procesoDueno = null;
+    int numFrame;
+    int direccionBase;
     private Pagina pagina;
+    int tiempoCarga;
 
 
     public Frame (String id, int tamano){
@@ -37,4 +39,21 @@ public class Frame {
     public Pagina getPagina() {
         return pagina;
     }
- }
+
+    public int getDireccionBase() {
+        return direccionBase;
+    }
+
+    public void setDireccionBase(int direccionBase) {
+        this.direccionBase = direccionBase;
+    }
+    
+    public int getTiempoCarga(){
+        return tiempoCarga;
+    }
+    
+     public int setTiempoCarga(int tiempo){
+        tiempoCarga = tiempo;
+        return tiempoCarga;
+    }       
+}

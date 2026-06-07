@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import Config.Configuracion;
 import Config.ConfigParticion;
+import Config.ConfigPaginacion;
 
 import java.io.InputStream;
 
@@ -100,6 +101,23 @@ public class GestorArchivos {
                 return null;
             }
 
+            return config;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static ConfigPaginacion cargarConfigPaginacion() {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            InputStream is = GestorArchivos.class.getClassLoader()
+                    .getResourceAsStream("Config/Config_Paginacion.json");
+            if (is == null) {
+                System.out.println("No se encontro Config_Paginacion.json en el classpath.");
+                return null;
+            }
+            ConfigPaginacion config = mapper.readValue(is, ConfigPaginacion.class);
             return config;
         } catch (Exception e) {
             e.printStackTrace();

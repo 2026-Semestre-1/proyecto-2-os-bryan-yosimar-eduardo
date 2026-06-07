@@ -18,6 +18,7 @@ import Memoria.Modelo.*;
 
 import Config.Configuracion;
 import Config.ConfigParticion;
+import Config.ConfigPaginacion;
 import Config.ConfigKernel;
 import kernel.planificacion.AlgoritmoFCFS;
 
@@ -114,11 +115,16 @@ public class NucleoSO {
     }
 
     public void crear_memoriaParticionada(int tamano_memoria) {
-        int cantidadFrames = (int) Math.ceil((double) tamano_memoria / 16);
-        this.memoriaPaginada = new MemoriaPaginada(16, cantidadFrames);
-        this.memoriaPaginada.inicializar();
         this.memoria = new Memoria(tamano_memoria);
         this.memoria.soloKernel();
+        ConfigPaginacion configPaginacion = GestorArchivos.cargarConfigPaginacion();
+        int pageSize = (configPaginacion != null) ? configPaginacion.getPaginacion() : 16;
+        int cantidadFrames = memoria.getEspacio_Usuario() / pageSize;
+        this.memoriaPaginada = new MemoriaPaginada(pageSize, cantidadFrames);
+        this.memoriaPaginada.inicializar(memoria.getEspacio_OS());
+        this.memoriaPaginada.setMemoriaPrincipal(memoria.getMemoria_Principal());
+        this.memoriaPaginada.setMemoriaSecundaria(almacenamiento.getMemoria_Secundaria());
+        this.memoriaPaginada.setPosicionMV(almacenamiento.getPosicion_Memoria_Virtual());
     }
 
     public void crear_memoriaParticionFijajIgual(int tamanoMemoria) {

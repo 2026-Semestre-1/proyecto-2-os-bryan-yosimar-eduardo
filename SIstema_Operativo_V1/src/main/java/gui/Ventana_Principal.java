@@ -12,6 +12,7 @@ import Memoria.Modelo.Particion;
 
 import java.io.File;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -216,8 +217,9 @@ public class Ventana_Principal extends javax.swing.JFrame {
                 Tabla_Frames = new javax.swing.JTable();
                 Tabla_Frames.setModel(new DefaultTableModel(
                         new Object[][] {},
-                        new String[] { "Frame", "Estado", "Proceso" }
+                        new String[] { "Frame", "Estado", "Proceso", "Rango Direcciones" }
                 ));
+                Tabla_Frames.getColumnModel().getColumn(3).setPreferredWidth(120);
                 jScrollPane7 = new javax.swing.JScrollPane(Tabla_Frames);
 
                 Tabla_Tablas_Paginas = new javax.swing.JTable();
@@ -295,7 +297,7 @@ public class Ventana_Principal extends javax.swing.JFrame {
                         int row = Tabla_Tablas_Paginas.getSelectedRow();
                         if (row >= 0 && nucleo.getMemoriaPaginada() != null) {
                             String proceso = (String) Tabla_Tablas_Paginas.getModel().getValueAt(row, 0);
-                            int numPagina = (Integer) Tabla_Tablas_Paginas.getModel().getValueAt(row, 1);
+                            int numPagina = Integer.parseInt(Tabla_Tablas_Paginas.getModel().getValueAt(row, 1).toString());
                             MemoriaPaginada mp = nucleo.getMemoriaPaginada();
                             for (TablaDePagina tp : mp.getTablaDePaginas()) {
                                 if (tp.getNombreProceso().equals(proceso) && tp.getNumeroDePagina() == numPagina) {
@@ -308,6 +310,17 @@ public class Ventana_Principal extends javax.swing.JFrame {
                                         } else {
                                             contenido_Text_Area.setText("");
                                         }
+                                    } else if (tp.getDireccionDisco() != -1 && mp.getMemoriaSecundaria() != null) {
+                                        List<String> lineas = new ArrayList<>();
+                                        for (int k = 0; k < mp.getPageSize(); k++) {
+                                            String inst = mp.getMemoriaSecundaria().get(tp.getDireccionDisco() + k);
+                                            if (inst != null && !inst.isEmpty()) {
+                                                lineas.add(inst);
+                                            }
+                                        }
+                                        contenido_Text_Area.setText(formatearContenido(lineas));
+                                    } else {
+                                        contenido_Text_Area.setText("");
                                     }
                                     break;
                                 }
@@ -739,9 +752,10 @@ public class Ventana_Principal extends javax.swing.JFrame {
                                                 }
                                         }
                                 }
-                                modeloTabla.addRow(new Object[] { f.getNumFrame(), estado, proceso });
+                                String rango = f.getDireccionBase() + " - " + (f.getDireccionBase() + memoriaPaginada.getPageSize() - 1);
+                        modeloTabla.addRow(new Object[] { f.getNumFrame(), estado, proceso, rango });
                         } else {
-                                modeloTabla.addRow(new Object[] { i, "Libre", "" });
+                                modeloTabla.addRow(new Object[] { i, "Libre", "", "" });
                         }
                 }
         }

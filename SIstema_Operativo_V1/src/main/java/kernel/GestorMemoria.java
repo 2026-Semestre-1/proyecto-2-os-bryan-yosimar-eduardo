@@ -112,14 +112,11 @@ public class GestorMemoria {
                 }
 
             case "Paginacion":
-                int cantidadPaginas = (int) Math.ceil((double)codigoASM.getContador_Intrucciones() / 16);
-                if (memoriaPaginada.hayFramesDisponibles(cantidadPaginas)) {
-                    memoriaPaginada.asignarProceso(codigoASM, nombreProceso);
-                    return 0;
-                } else {
-                    System.out.println("Gestor Memoria: No hay frames disponibles para asignar el proceso.");
-                    return 1;
-                }
+                int pageSize = memoriaPaginada.getPageSize();
+                int cantidadPaginas = (int) Math.ceil((double)codigoASM.getContador_Intrucciones() / pageSize);
+                memoriaPaginada.asignarProceso(codigoASM, nombreProceso);
+                return 0;
+
             case "ParticionIgual":
                 int tamanoproceso = codigoASM.getContador_Intrucciones();
                 controlador_MemoriaParticionada.asignarProcesoEstatico(
@@ -267,12 +264,12 @@ public class GestorMemoria {
                 return 0;
 
             case "Paginacion":
-                int cantidadPaginas = (int) Math.ceil((double) tamano / 16);
+                int cantidadPaginas = (int) Math.ceil((double) tamano / memoriaPaginada.getPageSize());
                 if (memoriaPaginada.hayFramesDisponibles(cantidadPaginas)) {
                     return 1;
                 } else {
-                    System.out.println("Gestor Memoria: No hay frames disponibles para asignar el proceso.");
-                    return 0;
+                    System.out.println("Gestor Memoria: Habrá page fault.");
+                    return 1;
                 }
 
             case "ParticionIgual":
