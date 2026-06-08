@@ -549,55 +549,62 @@ public class Ventana_Principal extends javax.swing.JFrame {
 
         private void Ejecutar_BTNActionPerformed(java.awt.event.ActionEvent evt) {
 
-                // if (this.bloqueo)
-                // return;
+                if (this.bloqueo)
+                        return;
 
-                // SwingWorker<Void, Void> worker = new SwingWorker<>() {
-                // @Override
-                // protected Void doInBackground() throws Exception {
-                // while (nucleo.hay_Procesos_Nuevos()) {
-                // while (!nucleo.comprobar_Finalizacion_Proceso()) {
-                // if (bloqueo)
-                // return null;
+                SwingWorker<Void, Void> worker = new SwingWorker<>() {
+                        @Override
+                        protected Void doInBackground() throws Exception {
 
-                // List<String> estado_Ejecucion = nucleo.paso_a_paso();
-                // if (estado_Ejecucion == null) {
-                // SwingUtilities.invokeLater(() -> {
-                // limpiar_tabla_BCP();
-                // limpiar_terminal();
-                // });
-                // return null;
-                // }
+                                // Recorremos todo mientras hayan procesos nuevos.
+                                // Tambien se deberia de comprobar si en un futuro van a llegar nuevos procesos.
+                                // Por que se puede eligir el momento de llegada de ese proceso.
+                                while (nucleo.hay_Procesos_Nuevos()) {
+                                        // while (!nucleo.comprobar_Finalizacion_Proceso()) {
+                                        if (bloqueo)
+                                                return null;
 
-                // String lineaActual = estado_Ejecucion.get(0);
-                // switch (lineaActual) {
-                // case "1":
-                // JOptionPane.showMessageDialog(null,
-                // "Error: " + estado_Ejecucion.get(1));
-                // break;
-                // case "2":
-                // bloqueo = true;
-                // entrada_Por_Teclado();
-                // break;
-                // case "3":
-                // imprimiar_En_Pantalla(estado_Ejecucion.get(1));
-                // break;
-                // case "4":
-                // limpiar_tabla_BCP();
-                // limpiar_terminal();
-                // break;
-                // }
+                                        List<String> estado_Ejecucion = nucleo.paso_a_paso();
+                                        if (estado_Ejecucion == null) {
+                                                SwingUtilities.invokeLater(() -> {
+                                                        limpiar_tabla_BCP();
+                                                        limpiar_terminal();
+                                                });
+                                                return null;
+                                        }
 
-                // nucleo.activar_Espera();
+                                        // String lineaActual = estado_Ejecucion.get(0);
+                                        // switch (lineaActual) {
+                                        // case "1":
+                                        // JOptionPane.showMessageDialog(null,
+                                        // "Error: " + estado_Ejecucion.get(1));
+                                        // break;
+                                        // case "2":
+                                        // bloqueo = true;
+                                        // entrada_Por_Teclado();
+                                        // break;
+                                        // case "3":
+                                        // imprimiar_En_Pantalla(estado_Ejecucion.get(1));
+                                        // break;
+                                        // case "4":
+                                        // limpiar_tabla_BCP();
+                                        // // limpiar_terminal();
+                                        // break;
+                                        // }
+                                        // Procesar los distintos estados del resultados de ejecutar una instruccion
+                                        // en cada CPU.
+                                        procesar_post_ejecicion(estado_Ejecucion);
 
-                // SwingUtilities.invokeLater(() -> actualizar_Tablas());
-                // }
-                // nucleo.procesar_Finalizacion_Proceso();
-                // }
-                // return null;
-                // }
-                // };
-                // worker.execute();
+                                        // nucleo.activar_Espera();
+
+                                        SwingUtilities.invokeLater(() -> actualizar_Tablas());
+                                        // }
+                                        // nucleo.procesar_Finalizacion_Proceso();
+                                }
+                                return null;
+                        }
+                };
+                worker.execute();
 
         }
 
@@ -616,25 +623,74 @@ public class Ventana_Principal extends javax.swing.JFrame {
                         return;
                 }
 
-                String lineaActual = estado_Ejecucion.get(0);
+                // Hay que cambiar esta parte para que podrian venir muchos mensajes ya que hay
+                // varios CPUs.
+                // String lineaActual = estado_Ejecucion.get(0);
 
-                if (lineaActual.equals("1")) {
-                        JOptionPane.showMessageDialog(null, "Error: " + estado_Ejecucion.get(1));
+                // if (lineaActual.equals("1")) {
+                // JOptionPane.showMessageDialog(null, "Error: " + estado_Ejecucion.get(1));
 
-                } else if (lineaActual.equals("2")) {
-                        this.bloqueo = true;
-                        this.entrada_Por_Teclado();
+                // } else if (lineaActual.equals("2")) {
+                // this.bloqueo = true;
+                // this.entrada_Por_Teclado();
 
-                } else if (lineaActual.equals("3")) {
-                        this.imprimiar_En_Pantalla(estado_Ejecucion.get(1));
+                // } else if (lineaActual.equals("3")) {
+                // this.imprimiar_En_Pantalla(estado_Ejecucion.get(1));
 
-                } else if (lineaActual.equals("4")) {
-                        limpiar_tabla_BCP();
-                        limpiar_terminal();
+                // } else if (lineaActual.equals("4")) {
+                // limpiar_tabla_BCP();
+                // // limpiar_terminal();
 
-                }
+                // }
+
+                // Procesar los distintos estados del resultados de ejecutar una instruccion
+                // en cada CPU.
+                procesar_post_ejecicion(estado_Ejecucion);
 
                 this.actualizar_Tablas();
+
+        }
+
+        // Para usar mas adelante.
+        private void procesar_post_ejecicion(List<String> estado_Ejecucion) {
+
+                // Recorrer todos los mensajes devueltos por las CPUs
+                for (int i = 0; i < estado_Ejecucion.size(); i++) {
+                        String lineaActual = estado_Ejecucion.get(i);
+
+                        switch (lineaActual) {
+                                case "1": // Error
+                                        if (i + 1 < estado_Ejecucion.size()) {
+                                                JOptionPane.showMessageDialog(null,
+                                                                "Error: " + estado_Ejecucion.get(++i));
+                                        }
+                                        break;
+
+                                case "2": // Input requerido
+                                        this.bloqueo = true;
+                                        this.entrada_Por_Teclado();
+                                        // Avanzar para consumir el texto asociado si existe
+                                        if (i + 1 < estado_Ejecucion.size()) {
+                                                i++;
+                                        }
+                                        break;
+
+                                case "3": // Print en pantalla
+                                        if (i + 1 < estado_Ejecucion.size()) {
+                                                this.imprimiar_En_Pantalla(estado_Ejecucion.get(++i));
+                                        }
+                                        break;
+
+                                case "4": // Proceso finalizado
+                                        limpiar_tabla_BCP();
+                                        // limpiar_terminal(); // si quieres limpiar también la consola
+                                        break;
+
+                                default:
+                                        // Ignorar cualquier código inesperado
+                                        break;
+                        }
+                }
 
         }
 
