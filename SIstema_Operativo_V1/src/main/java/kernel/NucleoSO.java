@@ -80,7 +80,7 @@ public class NucleoSO {
                 alg = new AlgoritmoHRRN();
                 break;
             case "Lottery":
-                alg = new AlgoritmoLotery();
+                alg = new AlgoritmoLottery();
                 break;
             default:
                 alg = new AlgoritmoFCFS();

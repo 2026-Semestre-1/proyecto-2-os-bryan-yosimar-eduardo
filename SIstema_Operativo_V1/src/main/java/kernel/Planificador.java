@@ -175,13 +175,8 @@ public class Planificador {
 
     public void cambiar_Estado_Proceso_Nuevo() {
         System.out.println("Planificador: Cambiando el estado de los procesos nuevos a preparados.");
-        int count_Iteraciones = 0;
         for (BCP bcp : this.cola_Procesos_Nuevos.values()) {
             String estado = "Preparado";
-            if (count_Iteraciones == 0) {
-                estado = "En Ejecuccion";
-                count_Iteraciones++;
-            }
             System.out
                     .println("[DEBUG ESTADO] PID=" + bcp.getPID() + " (" + bcp.getNombre_Programa() + ") -> " + estado);
             bcp.setEstado(estado);
