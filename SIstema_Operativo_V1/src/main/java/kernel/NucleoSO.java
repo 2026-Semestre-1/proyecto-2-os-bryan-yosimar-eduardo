@@ -339,7 +339,8 @@ public class NucleoSO {
         boolean creado = this.planificador.crearProcesoEnMemoria(nombreInstancia, codigo,
                 memoria, controlador_Memoria, tiempoCPU);
         if (!creado) {
-            return -3;
+            this.planificador.agregar_Programa_Pendiente(nombreArchivo);
+            return 0;
         }
         // this.planificador.cambiar_Estado_Proceso_Nuevo();
         if (!programa_Iniciado) {
@@ -396,9 +397,11 @@ public class NucleoSO {
     }
 
     public void sincronizar_Datos_CPU_Memoria_BCP(CPU pCPU) {
-        if (this.cpus.isEmpty())
+        if (this.cpus.isEmpty() || pCPU == null)
             return;
-        int PID_actual = this.cpus.get(0).getPID_Proceso_Actual();
+        int PID_actual = pCPU.getPID_Proceso_Actual();
+        if (PID_actual == 0)
+            return;
         memoria.actualizar_Registros_BCP(PID_actual, pCPU);
 
         // Aqui se procedera a sincronizar los datos de la BPC guardada en el
@@ -592,7 +595,10 @@ public class NucleoSO {
     // ############ Seccion para funciones auxiliares del proceso de ejecucion
     public List<String> procesar_Interrupciones(int pPID_Actual) {
         List<String> salida = new ArrayList<>();
-        CPU cpu = this.cpus.isEmpty() ? null : this.cpus.get(0);
+        CPU cpu = obtenerCpuPorPID(pPID_Actual);
+        if (cpu == null && !this.cpus.isEmpty()) {
+            cpu = this.cpus.get(0);
+        }
         if (cpu == null) {
             salida.add("0");
             return salida;
@@ -645,6 +651,17 @@ public class NucleoSO {
 
     public Map<Integer, String> getLista_Proceso() {
         return this.planificador.obtener_Estado_5_Procesos();
+    }
+
+    public void cambiarSoloNuevosAPreparados() {
+        if (planificador == null || controlador_Memoria == null)
+            return;
+        for (BCP bcp : planificador.getCola_Procesos_Nuevos().values()) {
+            if ("Nuevo".equals(bcp.getEstado())) {
+                bcp.setEstado("Preparado");
+                controlador_Memoria.actualizar_Estado_BCP(bcp.getPID(), "Preparado");
+            }
+        }
     }
 
     public List<BCP> getLista_Procesos_Terminados() {
