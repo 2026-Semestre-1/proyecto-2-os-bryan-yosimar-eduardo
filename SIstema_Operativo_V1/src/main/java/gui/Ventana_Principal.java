@@ -23,8 +23,11 @@ import javax.swing.JOptionPane;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
+import javax.swing.Timer;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
+
+import model.CPU;
 
 public class Ventana_Principal extends javax.swing.JFrame {
 
@@ -50,11 +53,45 @@ public class Ventana_Principal extends javax.swing.JFrame {
         private JTabbedPane Seccion_Inferior_Tab;
 
         public Ventana_Principal() {
+                tablasBCPCPU = new ArrayList<>();
                 initComponents();
                 nucleo = new NucleoSO();
                 nucleo.configurarMemoria(modeloGestionMemoria);
                 nucleo.configurarAlgoritmoPlanificacion("FCFS");
                 iniciar_Contenido_Base_tablas();
+                inicializar_BCP_Tabs();
+                autoRefreshTimer = new Timer(500, e -> actualizar_Tablas());
+
+                Tabla_Procesos.getSelectionModel().addListSelectionListener(e -> {
+                        if (e.getValueIsAdjusting())
+                                return;
+                        int fila = Tabla_Procesos.getSelectedRow();
+                        if (fila >= 0 && lastSnapshot != null) {
+                                Object pidObj = Tabla_Procesos.getModel().getValueAt(fila, 0);
+                                String pidStr = pidObj != null ? pidObj.toString() : "";
+                                if (pidStr.equals("Pendiente")) {
+                                        BCP_Label.setText("BCP");
+                                        limpiar_tabla_BCP();
+                                        return;
+                                }
+                                try {
+                                        int pid = Integer.parseInt(pidStr);
+                                        BCP bcp = buscarBCPporPID(pid, lastSnapshot.todosLosBCP);
+                                        if (bcp == null && lastSnapshot.procesosTerminados != null) {
+                                                bcp = buscarBCPporPID(pid, lastSnapshot.procesosTerminados);
+                                        }
+                                        actualizar_Tabla_BCP(bcp);
+                                        String nombre = (String) Tabla_Procesos.getModel().getValueAt(fila, 1);
+                                        BCP_Label.setText("Detalle: " + nombre + " (PID: " + pid + ")");
+                                } catch (NumberFormatException ignored) {
+                                }
+                        } else {
+                                BCP_Label.setText("BCP");
+                                if (lastSnapshot != null) {
+                                        actualizar_BCP_MultiCPU(lastSnapshot);
+                                }
+                        }
+                });
         }
 
         @SuppressWarnings("unchecked")
@@ -115,9 +152,11 @@ public class Ventana_Principal extends javax.swing.JFrame {
 
                                 },
                                 new String[] {
-                                                "Proceso", "Estado"
+                                                "PID", "Nombre", "Estado", "CPU", "Ráfaga", "Duracion"
                                 }) {
                         Class[] types = new Class[] {
+                                        java.lang.String.class, java.lang.String.class,
+                                        java.lang.String.class, java.lang.String.class,
                                         java.lang.String.class, java.lang.String.class
                         };
 
@@ -149,7 +188,7 @@ public class Ventana_Principal extends javax.swing.JFrame {
                                                 { "Tiempo Inicio:", null },
                                                 { "Tiempo Finalizacion:", null },
                                                 { "Duracion Estimada:", null },
-                                                { "Quantum Restante:", null },
+                                                { "Rafaga Restante:", null },
                                                 { "Tiempo Espera:", null },
                                                 { "Proximo Proceso:", null },
                                                 { "Pila (0):", null },
@@ -161,7 +200,10 @@ public class Ventana_Principal extends javax.swing.JFrame {
                                 new String[] {
                                                 "Dato", "Valor"
                                 }));
-                jScrollPane2.setViewportView(Tabla_BCP);
+                bcpTabbedPane = new javax.swing.JTabbedPane();
+                javax.swing.JScrollPane scrollCPU0 = new javax.swing.JScrollPane(Tabla_BCP);
+                bcpTabbedPane.addTab("CPU 0", scrollCPU0);
+                jScrollPane2.setViewportView(bcpTabbedPane);
 
                 Tabla_Memoria.setModel(new javax.swing.table.DefaultTableModel(
                                 new Object[][] {
@@ -238,6 +280,7 @@ public class Ventana_Principal extends javax.swing.JFrame {
                                 modeloGestionMemoria = seleccion;
                                 nucleo.configurarMemoria(modeloGestionMemoria);
                                 iniciar_Contenido_Base_tablas();
+                                inicializar_BCP_Tabs();
                                 actualizar_Tablas();
                         }
                 });
@@ -335,6 +378,8 @@ public class Ventana_Principal extends javax.swing.JFrame {
                 Seccion_Inferior_Tab.addTab("Paginacion", panelPaginacion);
                 Seccion_Inferior_Tab.addTab("Particiones", panelParticiones);
                 Seccion_Inferior_Tab.addTab("Archivos", jScrollPane11);
+                monitorGrafico = new MonitorGrafico();
+                Seccion_Inferior_Tab.addTab("Monitor", new javax.swing.JScrollPane(monitorGrafico));
 
                 Tabla_Frames.getSelectionModel().addListSelectionListener(e -> {
                         if (!e.getValueIsAdjusting()) {
@@ -399,185 +444,90 @@ public class Ventana_Principal extends javax.swing.JFrame {
                         }
                 });
 
-                javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-                getContentPane().setLayout(layout);
-                layout.setHorizontalGroup(
-                                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                                .addGroup(layout.createSequentialGroup()
-                                                                .addGroup(layout.createParallelGroup(
-                                                                                javax.swing.GroupLayout.Alignment.LEADING)
-                                                                                .addGroup(layout.createSequentialGroup()
-                                                                                                .addGap(14, 14, 14)
-                                                                                                .addGroup(layout.createParallelGroup(
-                                                                                                                javax.swing.GroupLayout.Alignment.LEADING)
-                                                                                                                .addGroup(layout.createSequentialGroup()
-                                                                                                                                .addComponent(jScrollPane1,
-                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                                                                                207,
-                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                                                                                                .addGap(37, 37, 37)
-                                                                                                                                .addComponent(jScrollPane2,
-                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                                                                                201,
-                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                                                                                                .addGap(30, 30, 30)
-                                                                                                                                .addComponent(jScrollPane3,
-                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                                                                                198,
-                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                                                                                                .addGap(32, 32, 32)
-                                                                                                                                .addComponent(jScrollPane4,
-                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                                                                                203,
-                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                                                                                                .addGap(51, 51, 51)
-                                                                                                                                .addComponent(jScrollPane5,
-                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                                                                                javax.swing.GroupLayout.DEFAULT_SIZE,
-                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE))
-                                                                                                                .addGroup(layout.createSequentialGroup()
-                                                                .addComponent(Subir_Archivo_BTN)
-                                                                .addGap(6, 6, 6)
-                                                                .addComponent(Crear_Proceso_BTN)
-                                                                .addGap(6, 6, 6)
-                                                                .addComponent(Cantidad_Spinner,
-                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                javax.swing.GroupLayout.DEFAULT_SIZE,
-                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                                .addGap(18, 18, 18)
-                                                                .addComponent(Selector_Memoria_Label)
-                                                                                                                                .addGap(5, 5, 5)
-                                                                                                                                .addComponent(Selector_Memoria,
-                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                                                                                120,
-                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                                                                                                .addGap(25, 25, 25)
-                                                                                                                                .addComponent(Selector_Algoritmo_Label)
-                                                                                                                                .addGap(5, 5, 5)
-                                                                                                                                .addComponent(Selector_Algoritmo,
-                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                                                                                100,
-                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                                                                                                .addGap(25, 25, 25)
-                                                                                                                                .addComponent(Quantum_Label)
-                                                                                                                                .addGap(5, 5, 5)
-                                                                                                                                .addComponent(Selector_Quantum,
-                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                                                                                50,
-                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE))
-                                                                                                                .addGroup(layout.createSequentialGroup()
-                                                                                                                                .addGap(55, 55, 55)
-                                                                                                                                .addComponent(Lista_Procesos_Label)
-                                                                                                                                .addGap(177, 177,
-                                                                                                                                                177)
-                                                                                                                                .addComponent(BCP_Label)
-                                                                                                                                .addGap(199, 199,
-                                                                                                                                                199)
-                                                                                                                                .addComponent(Memoria_Label)
-                                                                                                                                .addGap(170, 170,
-                                                                                                                                                170)
-                                                                                                                                .addComponent(Almacenamiento_Label)
-                                                                                                                                .addGap(187, 187,
-                                                                                                                                                187)
-                                                                                                                                .addComponent(Terminal_Text_Area_Label))
-                                                                                                                .addGroup(layout.createSequentialGroup()
-                                                                                                                                .addComponent(Ejecutar_BTN)
-                                                                                                                                .addGap(32, 32, 32)
-                                                                                                                                .addComponent(Paso_A_Paso_BTN)
-                                                                                                                                .addGap(18, 18, 18)
-                                                                                                                                .addGroup(layout.createParallelGroup(
-                                                                                                                                                javax.swing.GroupLayout.Alignment.LEADING)
-                                                                                                                                                .addGroup(layout.createSequentialGroup()
-                                                                                                                                                                .addComponent(Limpiar_BTN)
-                                                                                                                                                                .addGap(18, 18, 18)
-                                                                                                                                                                .addComponent(Estadisticas_BTN))
-                                                                                                                                                .addComponent(Seccion_Inferior_Tab,
-                                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                                                                                                771,
-                                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)))))
-                                                                                .addGroup(layout.createSequentialGroup()
-                                                                                                .addGap(421, 421, 421)
-                                                                                                .addComponent(jLabel1)))
-                                                                .addContainerGap(52, Short.MAX_VALUE)));
-                layout.setVerticalGroup(
-                                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                                .addGroup(layout.createSequentialGroup()
-                                                                .addGap(21, 21, 21)
-                                                                .addComponent(jLabel1)
-                                                                .addGap(35, 35, 35)
-                                                                .addGroup(layout.createParallelGroup(
-                                                                                javax.swing.GroupLayout.Alignment.BASELINE)
-                                                                                .addComponent(Ejecutar_BTN)
-                                                                                .addComponent(Paso_A_Paso_BTN)
-                                                                                .addComponent(Limpiar_BTN)
-                                                                                .addComponent(Estadisticas_BTN))
-                                                                .addGap(28, 28, 28)
-                                                                .addGroup(layout.createParallelGroup(
-                                                                                javax.swing.GroupLayout.Alignment.BASELINE)
-                                                                                .addComponent(Subir_Archivo_BTN)
-                                                                                .addComponent(Crear_Proceso_BTN)
-                                                                                .addComponent(Cantidad_Spinner,
-                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                                javax.swing.GroupLayout.DEFAULT_SIZE,
-                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                                                .addComponent(Selector_Memoria_Label)
-                                                                                .addComponent(Selector_Memoria,
-                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                                javax.swing.GroupLayout.DEFAULT_SIZE,
-                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                                                .addComponent(Selector_Algoritmo_Label)
-                                                                                .addComponent(Selector_Algoritmo,
-                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                                javax.swing.GroupLayout.DEFAULT_SIZE,
-                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                                                .addComponent(Quantum_Label)
-                                                                                .addComponent(Selector_Quantum,
-                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                                javax.swing.GroupLayout.DEFAULT_SIZE,
-                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE))
-                                                                .addGap(29, 29, 29)
-                                                                .addGroup(layout.createParallelGroup(
-                                                                                javax.swing.GroupLayout.Alignment.BASELINE)
-                                                                                .addComponent(Lista_Procesos_Label)
-                                                                                .addComponent(BCP_Label)
-                                                                                .addComponent(Memoria_Label)
-                                                                                .addComponent(Almacenamiento_Label)
-                                                                                .addComponent(Terminal_Text_Area_Label))
-                                                                .addPreferredGap(
-                                                                                javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                                                .addGroup(layout.createParallelGroup(
-                                                                                javax.swing.GroupLayout.Alignment.LEADING)
-                                                                                .addComponent(jScrollPane5,
-                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                                247,
-                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                                                .addGroup(layout.createParallelGroup(
-                                                                                                javax.swing.GroupLayout.Alignment.LEADING,
-                                                                                                false)
-                                                                                                .addComponent(jScrollPane4,
-                                                                                                                javax.swing.GroupLayout.DEFAULT_SIZE,
-                                                                                                                289,
-                                                                                                                Short.MAX_VALUE)
-                                                                                                .addComponent(jScrollPane3,
-                                                                                                                javax.swing.GroupLayout.DEFAULT_SIZE,
-                                                                                                                289,
-                                                                                                                Short.MAX_VALUE)
-                                                                                                .addComponent(jScrollPane2,
-                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                                                0,
-                                                                                                                Short.MAX_VALUE)
-                                                                                                .addComponent(jScrollPane1,
-                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                                                0,
-                                                                                                                Short.MAX_VALUE)))
-                                                                .addGap(18, 18, 18)
-                                                                .addComponent(Seccion_Inferior_Tab,
-                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                300,
-                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                                .addContainerGap(80, Short.MAX_VALUE)));
+                javax.swing.JPanel toolbarRow1 = new javax.swing.JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 6, 4));
+                toolbarRow1.add(Subir_Archivo_BTN);
+                toolbarRow1.add(Crear_Proceso_BTN);
+                toolbarRow1.add(Cantidad_Spinner);
+                toolbarRow1.add(Selector_Memoria_Label);
+                toolbarRow1.add(Selector_Memoria);
+                toolbarRow1.add(Selector_Algoritmo_Label);
+                toolbarRow1.add(Selector_Algoritmo);
+                toolbarRow1.add(Quantum_Label);
+                toolbarRow1.add(Selector_Quantum);
 
-                pack();
+                javax.swing.JPanel toolbarRow2 = new javax.swing.JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 6, 4));
+                toolbarRow2.add(Ejecutar_BTN);
+                toolbarRow2.add(Paso_A_Paso_BTN);
+                toolbarRow2.add(Limpiar_BTN);
+                toolbarRow2.add(Estadisticas_BTN);
+                javax.swing.SpinnerNumberModel refreshModel = new javax.swing.SpinnerNumberModel(500, 100, 3000, 100);
+                Refresh_Spinner = new javax.swing.JSpinner(refreshModel);
+                Refresh_Spinner.setPreferredSize(new java.awt.Dimension(70, 24));
+                Refresh_Spinner.addChangeListener(evt -> {
+                        int delay = (int) Refresh_Spinner.getValue();
+                        autoRefreshTimer.setDelay(delay);
+                });
+                toolbarRow2.add(new javax.swing.JLabel(" Refresco(ms):"));
+                toolbarRow2.add(Refresh_Spinner);
+
+                javax.swing.JPanel toolbarPanel = new javax.swing.JPanel(new java.awt.GridLayout(2, 1, 0, 2));
+                toolbarPanel.add(toolbarRow1);
+                toolbarPanel.add(toolbarRow2);
+
+                javax.swing.JPanel panelProcesos = new javax.swing.JPanel(new java.awt.BorderLayout());
+                panelProcesos.add(Lista_Procesos_Label, java.awt.BorderLayout.NORTH);
+                panelProcesos.add(jScrollPane1, java.awt.BorderLayout.CENTER);
+
+                javax.swing.JPanel panelBCP = new javax.swing.JPanel(new java.awt.BorderLayout());
+                panelBCP.add(BCP_Label, java.awt.BorderLayout.NORTH);
+                panelBCP.add(jScrollPane2, java.awt.BorderLayout.CENTER);
+
+                javax.swing.JSplitPane topSplitPane = new javax.swing.JSplitPane(
+                        javax.swing.JSplitPane.HORIZONTAL_SPLIT, panelProcesos, panelBCP);
+                topSplitPane.setResizeWeight(0.35);
+                topSplitPane.setDividerLocation(300);
+
+                javax.swing.JPanel panelMemoria = new javax.swing.JPanel(new java.awt.BorderLayout());
+                panelMemoria.add(Memoria_Label, java.awt.BorderLayout.NORTH);
+                panelMemoria.add(jScrollPane3, java.awt.BorderLayout.CENTER);
+
+                javax.swing.JPanel panelAlmacenamiento = new javax.swing.JPanel(new java.awt.BorderLayout());
+                panelAlmacenamiento.add(Almacenamiento_Label, java.awt.BorderLayout.NORTH);
+                panelAlmacenamiento.add(jScrollPane4, java.awt.BorderLayout.CENTER);
+
+                javax.swing.JPanel panelTerminal = new javax.swing.JPanel(new java.awt.BorderLayout());
+                panelTerminal.add(Terminal_Text_Area_Label, java.awt.BorderLayout.NORTH);
+                panelTerminal.add(jScrollPane5, java.awt.BorderLayout.CENTER);
+
+                javax.swing.JScrollPane monitorScroll = new javax.swing.JScrollPane(monitorGrafico);
+                javax.swing.JPanel panelMonitor = new javax.swing.JPanel(new java.awt.BorderLayout());
+                panelMonitor.add(new javax.swing.JLabel("Monitor de Planificacion"), java.awt.BorderLayout.NORTH);
+                panelMonitor.add(monitorScroll, java.awt.BorderLayout.CENTER);
+
+                javax.swing.JSplitPane middleSplitPane = new javax.swing.JSplitPane(
+                        javax.swing.JSplitPane.HORIZONTAL_SPLIT, panelMemoria, panelAlmacenamiento);
+                middleSplitPane.setResizeWeight(0.5);
+
+                javax.swing.JSplitPane bottomSplitPane = new javax.swing.JSplitPane(
+                        javax.swing.JSplitPane.HORIZONTAL_SPLIT, middleSplitPane, panelMonitor);
+                bottomSplitPane.setResizeWeight(0.65);
+                bottomSplitPane.setDividerLocation(500);
+
+                javax.swing.JSplitPane mainSplitPane = new javax.swing.JSplitPane(
+                        javax.swing.JSplitPane.VERTICAL_SPLIT, topSplitPane, bottomSplitPane);
+                mainSplitPane.setResizeWeight(0.55);
+                mainSplitPane.setDividerLocation(300);
+
+                javax.swing.JPanel mainCenterPanel = new javax.swing.JPanel(new java.awt.BorderLayout());
+                mainCenterPanel.add(mainSplitPane, java.awt.BorderLayout.CENTER);
+                mainCenterPanel.add(Seccion_Inferior_Tab, java.awt.BorderLayout.SOUTH);
+
+                getContentPane().setLayout(new java.awt.BorderLayout());
+                getContentPane().add(toolbarPanel, java.awt.BorderLayout.NORTH);
+                getContentPane().add(mainCenterPanel, java.awt.BorderLayout.CENTER);
+
+                setSize(1400, 900);
+                setMinimumSize(new java.awt.Dimension(1000, 600));
         }
 
         private void Ejecutar_BTNActionPerformed(java.awt.event.ActionEvent evt) {
@@ -585,15 +535,13 @@ public class Ventana_Principal extends javax.swing.JFrame {
                 if (this.bloqueo)
                         return;
 
+                autoRefreshTimer.start();
+
                 SwingWorker<Void, Void> worker = new SwingWorker<>() {
                         @Override
                         protected Void doInBackground() throws Exception {
 
-                                // Recorremos todo mientras hayan procesos nuevos.
-                                // Tambien se deberia de comprobar si en un futuro van a llegar nuevos procesos.
-                                // Por que se puede eligir el momento de llegada de ese proceso.
                                 while (nucleo.hay_Procesos_Nuevos()) {
-                                        // while (!nucleo.comprobar_Finalizacion_Proceso()) {
                                         if (bloqueo)
                                                 return null;
 
@@ -606,35 +554,16 @@ public class Ventana_Principal extends javax.swing.JFrame {
                                                 return null;
                                         }
 
-                                        // String lineaActual = estado_Ejecucion.get(0);
-                                        // switch (lineaActual) {
-                                        // case "1":
-                                        // JOptionPane.showMessageDialog(null,
-                                        // "Error: " + estado_Ejecucion.get(1));
-                                        // break;
-                                        // case "2":
-                                        // bloqueo = true;
-                                        // entrada_Por_Teclado();
-                                        // break;
-                                        // case "3":
-                                        // imprimiar_En_Pantalla(estado_Ejecucion.get(1));
-                                        // break;
-                                        // case "4":
-                                        // limpiar_tabla_BCP();
-                                        // // limpiar_terminal();
-                                        // break;
-                                        // }
-                                        // Procesar los distintos estados del resultados de ejecutar una instruccion
-                                        // en cada CPU.
                                         procesar_post_ejecicion(estado_Ejecucion);
 
-                                        // nucleo.activar_Espera();
-
                                         SwingUtilities.invokeLater(() -> actualizar_Tablas());
-                                        // }
-                                        // nucleo.procesar_Finalizacion_Proceso();
                                 }
                                 return null;
+                        }
+
+                        @Override
+                        protected void done() {
+                                autoRefreshTimer.stop();
                         }
                 };
                 worker.execute();
@@ -656,28 +585,6 @@ public class Ventana_Principal extends javax.swing.JFrame {
                         return;
                 }
 
-                // Hay que cambiar esta parte para que podrian venir muchos mensajes ya que hay
-                // varios CPUs.
-                // String lineaActual = estado_Ejecucion.get(0);
-
-                // if (lineaActual.equals("1")) {
-                // JOptionPane.showMessageDialog(null, "Error: " + estado_Ejecucion.get(1));
-
-                // } else if (lineaActual.equals("2")) {
-                // this.bloqueo = true;
-                // this.entrada_Por_Teclado();
-
-                // } else if (lineaActual.equals("3")) {
-                // this.imprimiar_En_Pantalla(estado_Ejecucion.get(1));
-
-                // } else if (lineaActual.equals("4")) {
-                // limpiar_tabla_BCP();
-                // // limpiar_terminal();
-
-                // }
-
-                // Procesar los distintos estados del resultados de ejecutar una instruccion
-                // en cada CPU.
                 procesar_post_ejecicion(estado_Ejecucion);
 
                 this.actualizar_Tablas();
@@ -732,6 +639,7 @@ public class Ventana_Principal extends javax.swing.JFrame {
                 this.nucleo.reiniciar_programa();
                 this.iniciar_Contenido_Base_tablas();
                 this.bloqueo = false;
+                autoRefreshTimer.stop();
 
         }
 
@@ -811,39 +719,58 @@ public class Ventana_Principal extends javax.swing.JFrame {
         }
 
         private void actualizar_Desde_Snapshot(SnapshotSistema snap) {
+                this.lastSnapshot = snap;
                 actualizar_tabla_Almacenamiento(snap.almacenamiento);
                 actualizar_tabla_Memoria(snap.memoria);
-                actualizar_Tabla_Procesos(snap.procesos);
-                actualizar_Tabla_BCP(snap.bcpActual);
+                actualizar_Tabla_Procesos(snap);
+                actualizar_BCP_MultiCPU(snap);
                 actualizar_Tabla_Frames(snap.memoriaPaginada);
                 actualizar_Tabla_Paginas(snap.memoriaPaginada);
                 actualizar_Tabla_Particiones(snap.particiones);
                 actualizar_Tabla_Archivos();
+                monitorGrafico.setSnapshot(snap);
         }
 
         public void iniciar_Contenido_Base_tablas() {
 
                 DefaultTableModel modelo_Tabla_Procesos = (DefaultTableModel) Tabla_Procesos.getModel();
-
                 modelo_Tabla_Procesos.setRowCount(0);
-
-                for (int i = 0; i < 20; i++) {
-                        modelo_Tabla_Procesos.addRow(new Object[] { " ", " " });
-                }
 
                 SnapshotSistema snap = nucleo.tomarSnapshot();
                 actualizar_tabla_Memoria(snap.memoria);
                 actualizar_tabla_Almacenamiento(snap.almacenamiento);
         }
 
-        public void actualizar_Tabla_Procesos(Map<Integer, String> lista_Procesos) {
+        public void actualizar_Tabla_Procesos(SnapshotSistema snap) {
                 DefaultTableModel modeloTabla = (DefaultTableModel) Tabla_Procesos.getModel();
                 modeloTabla.setRowCount(0);
 
-                for (Map.Entry<Integer, String> entry : lista_Procesos.entrySet()) {
-                        int pid = entry.getKey();
-                        String estado = entry.getValue();
-                        modeloTabla.addRow(new Object[] { pid, estado });
+                for (BCP bcp : snap.todosLosBCP) {
+                        modeloTabla.addRow(new Object[] {
+                                String.valueOf(bcp.getPID()),
+                                bcp.getNombre_Programa(),
+                                bcp.getEstado(),
+                                bcp.getCPU_Asignada(),
+                                bcp.getRafaga_Restante(),
+                                bcp.getTiempo_Ejecucion()
+                        });
+                }
+
+                for (String nombre : snap.pendientes) {
+                        modeloTabla.addRow(new Object[] {
+                                "Pendiente", nombre, "Nuevo", "-", "N/A", "N/A"
+                        });
+                }
+
+                for (BCP bcp : snap.procesosTerminados) {
+                        modeloTabla.addRow(new Object[] {
+                                String.valueOf(bcp.getPID()),
+                                bcp.getNombre_Programa(),
+                                bcp.getEstado(),
+                                bcp.getCPU_Asignada(),
+                                "0",
+                                bcp.getTiempo_Ejecucion()
+                        });
                 }
         }
 
@@ -876,13 +803,126 @@ public class Ventana_Principal extends javax.swing.JFrame {
                 modeloTabla.setValueAt(datos_BCP.getTiempo_Llegada(), 16, 1); // Tiempo_Llegada
                 modeloTabla.setValueAt(datos_BCP.getTiempo_Inicio(), 17, 1); // Tiempo_Inicio
                 modeloTabla.setValueAt(datos_BCP.getTiempo_Finalizacion(), 18, 1); // Tiempo_Finalizacion
-                modeloTabla.setValueAt(datos_BCP.getRafaga_Restante(), 19, 1); // Rafaga_Restante
-                modeloTabla.setValueAt(datos_BCP.getRafaga_Restante(), 20, 1); // Quantum_Restante
+                modeloTabla.setValueAt(datos_BCP.getTiempo_Ejecucion(), 19, 1); // Duracion Estimada
+                modeloTabla.setValueAt(datos_BCP.getRafaga_Restante(), 20, 1); // Rafaga Restante
                 modeloTabla.setValueAt(datos_BCP.getTiempo_Espera(), 21, 1); // Tiempo_Espera
                 modeloTabla.setValueAt(datos_BCP.getProximo_Proceso(), 22, 1); // Proximo_Proceso
                 int[] pila = datos_BCP.getPila();
                 for (int i = 0; i < pila.length; i++) {
                         modeloTabla.setValueAt(pila[i], i + 23, 1); // Pila
+                }
+        }
+
+        private BCP buscarBCPporPID(int pid, List<BCP> lista) {
+                if (pid == 0) return null;
+                for (BCP bcp : lista) {
+                        if (bcp.getPID() == pid) return bcp;
+                }
+                return null;
+        }
+
+        public void actualizar_BCP_MultiCPU(SnapshotSistema snap) {
+                List<CPU> cpus = snap.estadoCPUs;
+                if (!cpus.isEmpty()) {
+                        int pid0 = cpus.get(0).getPID_Proceso_Actual();
+                        BCP bcp0 = buscarBCPporPID(pid0, snap.todosLosBCP);
+                        actualizar_Tabla_BCP(bcp0);
+                }
+                for (int i = 1; i < cpus.size(); i++) {
+                        int idx = i - 1;
+                        if (idx < tablasBCPCPU.size()) {
+                                int pid = cpus.get(i).getPID_Proceso_Actual();
+                                BCP bcp = buscarBCPporPID(pid, snap.todosLosBCP);
+                                actualizar_Tabla_BCP_Generica(tablasBCPCPU.get(idx), bcp);
+                        }
+                }
+        }
+
+        public void actualizar_Tabla_BCP_Generica(javax.swing.JTable tabla, BCP datos_BCP) {
+                DefaultTableModel modeloTabla = (DefaultTableModel) tabla.getModel();
+                if (datos_BCP == null) {
+                        modeloTabla.setValueAt("Libre", 0, 1);
+                        for (int i = 1; i < modeloTabla.getRowCount(); i++) {
+                                modeloTabla.setValueAt("", i, 1);
+                        }
+                        return;
+                }
+                modeloTabla.setValueAt(datos_BCP.getPID(), 0, 1);
+                modeloTabla.setValueAt(datos_BCP.getEstado(), 1, 1);
+                modeloTabla.setValueAt(datos_BCP.getPrioridad(), 2, 1);
+                modeloTabla.setValueAt(datos_BCP.getMem_Init(), 3, 1);
+                modeloTabla.setValueAt(datos_BCP.getMem_End(), 4, 1);
+                modeloTabla.setValueAt(datos_BCP.getPC(), 5, 1);
+                modeloTabla.setValueAt(datos_BCP.getIR(), 6, 1);
+                modeloTabla.setValueAt(datos_BCP.getAC(), 7, 1);
+                modeloTabla.setValueAt(datos_BCP.getAX(), 8, 1);
+                modeloTabla.setValueAt(datos_BCP.getBX(), 9, 1);
+                modeloTabla.setValueAt(datos_BCP.getCX(), 10, 1);
+                modeloTabla.setValueAt(datos_BCP.getDX(), 11, 1);
+                modeloTabla.setValueAt(datos_BCP.getAH(), 12, 1);
+                modeloTabla.setValueAt(datos_BCP.getAL(), 13, 1);
+                modeloTabla.setValueAt(datos_BCP.getIO_STATUS(), 14, 1);
+                modeloTabla.setValueAt(datos_BCP.getCPU_Asignada(), 15, 1);
+                modeloTabla.setValueAt(datos_BCP.getTiempo_Llegada(), 16, 1);
+                modeloTabla.setValueAt(datos_BCP.getTiempo_Inicio(), 17, 1);
+                modeloTabla.setValueAt(datos_BCP.getTiempo_Finalizacion(), 18, 1);
+                modeloTabla.setValueAt(datos_BCP.getTiempo_Ejecucion(), 19, 1);
+                modeloTabla.setValueAt(datos_BCP.getRafaga_Restante(), 20, 1);
+                modeloTabla.setValueAt(datos_BCP.getTiempo_Espera(), 21, 1);
+                modeloTabla.setValueAt(datos_BCP.getProximo_Proceso(), 22, 1);
+                int[] pila = datos_BCP.getPila();
+                for (int i = 0; i < pila.length; i++) {
+                        modeloTabla.setValueAt(pila[i], i + 23, 1);
+                }
+        }
+
+        public void inicializar_BCP_Tabs() {
+                tablasBCPCPU.clear();
+                while (bcpTabbedPane.getTabCount() > 1) {
+                        bcpTabbedPane.removeTabAt(bcpTabbedPane.getTabCount() - 1);
+                }
+                java.util.List<CPU> cpus = nucleo.getCpus();
+                if (bcpTabbedPane.getTabCount() > 0 && !cpus.isEmpty()) {
+                        bcpTabbedPane.setTitleAt(0, "CPU " + cpus.get(0).getNumero_CPU());
+                }
+                for (int i = 1; i < cpus.size(); i++) {
+                        javax.swing.JTable tablaCPU = new javax.swing.JTable();
+                        tablaCPU.setModel(new javax.swing.table.DefaultTableModel(
+                                new Object[][] {
+                                        { "PID:", null },
+                                        { "Estado:", null },
+                                        { "Prioridad:", null },
+                                        { "Inicio Memoria:", null },
+                                        { "Final Memoria:", null },
+                                        { "PC:", null },
+                                        { "IR:", null },
+                                        { "AC:", null },
+                                        { "AX:", null },
+                                        { "BX", null },
+                                        { "CX:", null },
+                                        { "DX:", null },
+                                        { "AH:", null },
+                                        { "AL:", null },
+                                        { "Lista Archivos:", null },
+                                        { "CPU Asignada:", null },
+                                        { "Tiempo Llegada:", null },
+                                        { "Tiempo Inicio:", null },
+                                        { "Tiempo Finalizacion:", null },
+                                        { "Duracion Estimada:", null },
+                                        { "Rafaga Restante:", null },
+                                        { "Tiempo Espera:", null },
+                                        { "Proximo Proceso:", null },
+                                        { "Pila (0):", null },
+                                        { "Pila (1):", null },
+                                        { "Pila (2):", null },
+                                        { "Pila (3):", null },
+                                        { "Pila (4):", null }
+                                },
+                                new String[] { "Dato", "Valor" }
+                        ));
+                        javax.swing.JScrollPane scrollCPU = new javax.swing.JScrollPane(tablaCPU);
+                        bcpTabbedPane.addTab("CPU " + cpus.get(i).getNumero_CPU(), scrollCPU);
+                        tablasBCPCPU.add(tablaCPU);
                 }
         }
 
@@ -1185,4 +1225,10 @@ public class Ventana_Principal extends javax.swing.JFrame {
         private javax.swing.JTextArea terminal_Text_Area;
         private javax.swing.JTextArea contenido_Text_Area;
         private javax.swing.JLabel Contenido_Label;
+        private javax.swing.JTabbedPane bcpTabbedPane;
+        private MonitorGrafico monitorGrafico;
+        private Timer autoRefreshTimer;
+        private javax.swing.JSpinner Refresh_Spinner;
+        private List<javax.swing.JTable> tablasBCPCPU;
+        private SnapshotSistema lastSnapshot;
 }

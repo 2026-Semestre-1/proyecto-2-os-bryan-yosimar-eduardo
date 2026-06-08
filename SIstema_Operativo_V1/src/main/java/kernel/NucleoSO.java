@@ -339,7 +339,8 @@ public class NucleoSO {
         boolean creado = this.planificador.crearProcesoEnMemoria(nombreInstancia, codigo,
                 memoria, controlador_Memoria, tiempoCPU);
         if (!creado) {
-            return -1;
+            this.planificador.agregar_Programa_Pendiente(nombreArchivo);
+            return 0;
         }
         this.planificador.cambiar_Estado_Proceso_Nuevo();
         if (!programa_Iniciado) {
@@ -426,6 +427,8 @@ public class NucleoSO {
         bcp_memoria.setTamanoProceso(bcp_proceso.getTamanoProceso());
         bcp_memoria.set_momento_creacion(bcp_proceso.get_momento_creacion());
         bcp_memoria.set_momento_finalizacion(bcp_proceso.get_momento_finalizacion());
+        bcp_memoria.setRafaga_Restante(bcp_proceso.getRafaga_Restante());
+        bcp_memoria.setTiempo_Ejecucion(bcp_proceso.getTiempo_Ejecucion());
         bcp_memoria.setOverlayActual(bcp_proceso.getOverlayActual());
         bcp_memoria.setTotalOverlays(bcp_proceso.getTotalOverlays());
         bcp_memoria.setTieneOverlay(bcp_proceso.isTieneOverlay());
@@ -639,6 +642,10 @@ public class NucleoSO {
         return this.memoria.obtener_Datos_BCP(pid_ProcesoActual);
     }
 
+    public List<CPU> getCpus() {
+        return this.cpus;
+    }
+
     public Map<Integer, String> getLista_Proceso() {
         return this.planificador.obtener_Estado_5_Procesos();
     }
@@ -689,6 +696,12 @@ public class NucleoSO {
         List<Particion> particiones = (controlador_MemoriaParticionada != null)
                 ? controlador_MemoriaParticionada.getParticiones()
                 : null;
+        List<BCP> todosLosBCP = (planificador != null)
+                ? new java.util.ArrayList<>(planificador.getCola_Procesos_Nuevos().values())
+                : new java.util.ArrayList<>();
+        List<String> pendientes = (planificador != null)
+                ? new java.util.ArrayList<>(planificador.getCola_Programas_Pendientes())
+                : new java.util.ArrayList<>();
         if (this.cpus.isEmpty() || memoria == null) {
             return new SnapshotSistema(
                     memoria,
@@ -698,7 +711,10 @@ public class NucleoSO {
                     new java.util.ArrayList<>(),
                     this.hay_interrupcion,
                     mp,
-                    particiones);
+                    particiones,
+                    todosLosBCP,
+                    pendientes,
+                    new java.util.ArrayList<>(this.cpus));
         }
         return new SnapshotSistema(
                 memoria,
@@ -708,6 +724,9 @@ public class NucleoSO {
                 this.planificador.getCola_Procesos_Terminados(),
                 this.hay_interrupcion,
                 mp,
-                particiones);
+                particiones,
+                todosLosBCP,
+                pendientes,
+                new java.util.ArrayList<>(this.cpus));
     }
 }
