@@ -18,7 +18,7 @@ public class AlgoritmoSJF implements IAlgoritmoPlanificacion {
             GestorMemoria controlador, int tiempoActualCPU) {
         // Admitir procesos hasta llenar el límite (5) prefiriendo los programas de
         // menor duración
-        while (ctx.getCola_Procesos_Nuevos().size() < 5) {
+        while (ctx.getCola_Procesos_Nuevos().size() < ctx.getMaxProcesosSimultaneos()) {
             if (ctx.getCola_Programas_Pendientes().isEmpty())
                 break;
 

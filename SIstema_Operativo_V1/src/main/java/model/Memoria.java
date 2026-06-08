@@ -329,6 +329,91 @@ public class Memoria {
         return 0;
     }
 
+    /**
+     * Nombre: modificar_Tiempo_Espera_BCP
+     * 
+     * Descripcion: Modifica el tiempo de espera del BCP incrementandolo en 1.
+     * 
+     * @param pPID (int): PID del proceso.
+     * @return (int): 0 si el tiempo de espera se modifico correctamente, 1 si no se
+     *         encontro la BCP.
+     */
+    public int modificar_Tiempo_Espera_Procesos_Listos(Map<Integer, BCP> pLista_Procesos_Listos) {
+
+        if (pLista_Procesos_Listos == null) {
+            return -1;
+        }
+
+        for (BCP bcp : pLista_Procesos_Listos.values()) {
+            // Para saltarse los procesos que esten en ejecucion.
+            if (bcp.getEstado().equals("En Proceso")) {
+                continue;
+            }
+
+            int posicion_BCP = buscar_Posicion_BCP(bcp.getPID());
+
+            if (posicion_BCP == -1) {
+                return -1;
+            }
+            // Obtener el tiempo de espera actual
+            int tiempo_Espera = Integer.parseInt(Memoria_Principal.get(posicion_BCP + 27));
+
+            // Incrementar el tiempo de espera
+            tiempo_Espera++;
+
+            // Actualizar el tiempo de espera
+            Memoria_Principal.put(posicion_BCP + 27, String.valueOf(tiempo_Espera));
+
+            // Actualizar el valor del BCP en la lista de procesos listos.
+            bcp.setTiempo_Espera(String.valueOf(tiempo_Espera));
+        }
+
+        return 0;
+    }
+
+    public int modificar_Tiempo_Espera_BCP(int pPID) {
+        int posicion_BCP = buscar_Posicion_BCP(pPID);
+        if (posicion_BCP == -1) {
+            return 1;
+        }
+        int tiempo_Espera = Integer.parseInt(Memoria_Principal.get(posicion_BCP + 27));
+        tiempo_Espera++;
+        Memoria_Principal.put(posicion_BCP + 27, String.valueOf(tiempo_Espera));
+        return 0;
+    }
+
+    /**
+     * Nombre: modificar_Tiempo_Restante_BCP
+     * 
+     * Descripcion: Modifica el tiempo restante del BCP decrementandolo en 1.
+     * 
+     * @param pPID (int): PID del proceso.
+     * @return (int): 0 si el tiempo restante se modifico correctamente, 1 si no se
+     *         encontro la BCP.
+     */
+    public int modificar_Tiempo_Restante_BCP(int pPID) {
+        int posicion_BCP = buscar_Posicion_BCP(pPID);
+        if (posicion_BCP == -1) {
+            return 1;
+        }
+
+        int tiempo_Restante = Integer.parseInt(Memoria_Principal.get(posicion_BCP + 26));
+        tiempo_Restante--;
+        Memoria_Principal.put(posicion_BCP + 26, String.valueOf(tiempo_Restante));
+        return 0;
+
+    }
+
+    /**
+     * Nombre: modificar_Enlace_Siguiente_BCP
+     * 
+     * Descripcion: Modifica el enlace siguiente del BCP.
+     * 
+     * @param pPID             (int): PID del proceso.
+     * @param pProximo_Proceso (int): Proximo proceso.
+     * @return (int): 0 si el enlace siguiente se modifico correctamente, 1 si no se
+     *         encontro la BCP.
+     */
     public int modificar_Enlace_Siguiente_BCP(int pPID, int pProximo_Proceso) {
         int posicion_BCP = buscar_Posicion_BCP(pPID);
         if (posicion_BCP == -1) {

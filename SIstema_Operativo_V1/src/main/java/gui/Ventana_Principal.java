@@ -225,7 +225,8 @@ public class Ventana_Principal extends javax.swing.JFrame {
                 Selector_Algoritmo_Label = new javax.swing.JLabel();
                 Selector_Algoritmo_Label.setText("Algoritmo:");
 
-                Selector_Algoritmo = new JComboBox<>(new String[] { "FCFS", "SJF", "RR", "SRR", "SRT", "HRRN", "Lottery" });
+                Selector_Algoritmo = new JComboBox<>(
+                                new String[] { "FCFS", "SJF", "RR", "SRR", "SRT", "HRRN", "Lottery" });
                 Selector_Algoritmo.setSelectedItem("FCFS");
 
                 Quantum_Label = new javax.swing.JLabel();
@@ -414,28 +415,28 @@ public class Ventana_Principal extends javax.swing.JFrame {
                                                                                                                                                 javax.swing.GroupLayout.DEFAULT_SIZE,
                                                                                                                                                 javax.swing.GroupLayout.PREFERRED_SIZE))
                                                                                                                 .addGroup(layout.createSequentialGroup()
-                                                                                                    .addComponent(Cargar_Archivos_BTN)
-                                                                                                    .addGap(18, 18, 18)
-                                                                                                    .addComponent(Selector_Memoria_Label)
-                                                                                                    .addGap(5, 5, 5)
-                                                                                                    .addComponent(Selector_Memoria,
-                                                                                                                    javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                                                    120,
-                                                                                                                    javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                                                                    .addGap(25, 25, 25)
-                                                                                                    .addComponent(Selector_Algoritmo_Label)
-                                                                                                    .addGap(5, 5, 5)
-                                                                                                    .addComponent(Selector_Algoritmo,
-                                                                                                                    javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                                                    100,
-                                                                                                                    javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                                                                    .addGap(25, 25, 25)
-                                                                                                    .addComponent(Quantum_Label)
-                                                                                                    .addGap(5, 5, 5)
-                                                                                                    .addComponent(Selector_Quantum,
-                                                                                                                    javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                                                    50,
-                                                                                                                    javax.swing.GroupLayout.PREFERRED_SIZE))
+                                                                                                                                .addComponent(Cargar_Archivos_BTN)
+                                                                                                                                .addGap(18, 18, 18)
+                                                                                                                                .addComponent(Selector_Memoria_Label)
+                                                                                                                                .addGap(5, 5, 5)
+                                                                                                                                .addComponent(Selector_Memoria,
+                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                                                                                120,
+                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                                                                                                .addGap(25, 25, 25)
+                                                                                                                                .addComponent(Selector_Algoritmo_Label)
+                                                                                                                                .addGap(5, 5, 5)
+                                                                                                                                .addComponent(Selector_Algoritmo,
+                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                                                                                100,
+                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                                                                                                .addGap(25, 25, 25)
+                                                                                                                                .addComponent(Quantum_Label)
+                                                                                                                                .addGap(5, 5, 5)
+                                                                                                                                .addComponent(Selector_Quantum,
+                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                                                                                50,
+                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE))
                                                                                                                 .addGroup(layout.createSequentialGroup()
                                                                                                                                 .addGap(55, 55, 55)
                                                                                                                                 .addComponent(Lista_Procesos_Label)
@@ -548,55 +549,55 @@ public class Ventana_Principal extends javax.swing.JFrame {
 
         private void Ejecutar_BTNActionPerformed(java.awt.event.ActionEvent evt) {
 
-                if (this.bloqueo)
-                        return;
+                // if (this.bloqueo)
+                // return;
 
-                SwingWorker<Void, Void> worker = new SwingWorker<>() {
-                        @Override
-                        protected Void doInBackground() throws Exception {
-                                while (nucleo.hay_Procesos_Nuevos()) {
-                                        while (!nucleo.comprobar_Finalizacion_Proceso()) {
-                                                if (bloqueo)
-                                                        return null;
+                // SwingWorker<Void, Void> worker = new SwingWorker<>() {
+                // @Override
+                // protected Void doInBackground() throws Exception {
+                // while (nucleo.hay_Procesos_Nuevos()) {
+                // while (!nucleo.comprobar_Finalizacion_Proceso()) {
+                // if (bloqueo)
+                // return null;
 
-                                                List<String> estado_Ejecucion = nucleo.paso_a_paso();
-                                                if (estado_Ejecucion == null) {
-                                                        SwingUtilities.invokeLater(() -> {
-                                                                limpiar_tabla_BCP();
-                                                                limpiar_terminal();
-                                                        });
-                                                        return null;
-                                                }
+                // List<String> estado_Ejecucion = nucleo.paso_a_paso();
+                // if (estado_Ejecucion == null) {
+                // SwingUtilities.invokeLater(() -> {
+                // limpiar_tabla_BCP();
+                // limpiar_terminal();
+                // });
+                // return null;
+                // }
 
-                                                String lineaActual = estado_Ejecucion.get(0);
-                                                switch (lineaActual) {
-                                                        case "1":
-                                                                JOptionPane.showMessageDialog(null,
-                                                                                "Error: " + estado_Ejecucion.get(1));
-                                                                break;
-                                                        case "2":
-                                                                bloqueo = true;
-                                                                entrada_Por_Teclado();
-                                                                break;
-                                                        case "3":
-                                                                imprimiar_En_Pantalla(estado_Ejecucion.get(1));
-                                                                break;
-                                                        case "4":
-                                                                limpiar_tabla_BCP();
-                                                                limpiar_terminal();
-                                                                break;
-                                                }
+                // String lineaActual = estado_Ejecucion.get(0);
+                // switch (lineaActual) {
+                // case "1":
+                // JOptionPane.showMessageDialog(null,
+                // "Error: " + estado_Ejecucion.get(1));
+                // break;
+                // case "2":
+                // bloqueo = true;
+                // entrada_Por_Teclado();
+                // break;
+                // case "3":
+                // imprimiar_En_Pantalla(estado_Ejecucion.get(1));
+                // break;
+                // case "4":
+                // limpiar_tabla_BCP();
+                // limpiar_terminal();
+                // break;
+                // }
 
-                                                nucleo.activar_Espera();
+                // nucleo.activar_Espera();
 
-                                                SwingUtilities.invokeLater(() -> actualizar_Tablas());
-                                        }
-                                        nucleo.procesar_Finalizacion_Proceso();
-                                }
-                                return null;
-                        }
-                };
-                worker.execute();
+                // SwingUtilities.invokeLater(() -> actualizar_Tablas());
+                // }
+                // nucleo.procesar_Finalizacion_Proceso();
+                // }
+                // return null;
+                // }
+                // };
+                // worker.execute();
 
         }
 
