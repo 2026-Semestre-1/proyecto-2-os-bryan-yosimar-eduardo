@@ -43,7 +43,7 @@ public class AlgoritmoFCFS implements IAlgoritmoPlanificacion {
     public int seleccionarSiguiente(Planificador ctx) {
         for (BCP bcp : ctx.getCola_Procesos_Nuevos().values()) {
             String estado = bcp.getEstado();
-            if ("Preparado".equals(estado) || "En Ejecuccion".equals(estado)) {
+            if ("Preparado".equals(estado)) {
                 return bcp.getPID();
             }
         }

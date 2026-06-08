@@ -346,7 +346,7 @@ public class Memoria {
 
         for (BCP bcp : pLista_Procesos_Listos.values()) {
             // Para saltarse los procesos que esten en ejecucion.
-            if (bcp.getEstado().equals("En Proceso")) {
+            if (bcp.getEstado().equals("En Proceso") || bcp.getEstado().equals("En Ejecucion")) {
                 continue;
             }
 

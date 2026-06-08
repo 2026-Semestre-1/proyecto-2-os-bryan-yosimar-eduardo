@@ -548,43 +548,62 @@ public class NucleoSO {
         // 2. Fase de planificacion (según algoritmo)
         String nombreAlgoritmo = planificador.getNombreAlgoritmo();
 
-        for (CPU cpu : this.cpus) {
-            int actualPid = cpu.getPID_Proceso_Actual();
-            int candidato = planificador.seleccionarSiguiente();
+        switch (nombreAlgoritmo) {
 
-            switch (nombreAlgoritmo) {
-
-                case "SRT":
-                    // Se debe poner el estado del PID actual de este CPU en "Listo"
-                    this.memoria.actualizar_Estado_BCP(actualPid, "Listo");
-                    if (candidato != -1 && candidato != actualPid) {
-                        Despachador.despachador(cpu, memoria, candidato);
-                        memoria.actualizar_Estado_BCP(candidato, "En Ejecuccion");
+            case "SRT":
+            case "RR": {
+                int candidato = planificador.seleccionarSiguiente();
+                if (candidato == -1)
+                    break;
+                boolean yaAsignado = false;
+                for (CPU cpu : this.cpus) {
+                    if (cpu.getPID_Proceso_Actual() == candidato) {
+                        yaAsignado = true;
+                        break;
                     }
+                }
+                if (yaAsignado)
                     break;
-
-                case "RR":
-                    // Aqui se tendria que comprobar si ya llego al quantum que se establecio para
-                    // este algoritmo.
-
-                    // Preemptivos: revisar en cada tick
-                    if (candidato != -1 && candidato != actualPid) {
-                        Despachador.despachador(cpu, memoria, candidato);
-                        memoria.actualizar_Estado_BCP(candidato, "En Ejecuccion");
+                CPU cpuObjetivo = null;
+                int peorRafaga = -1;
+                for (CPU cpu : this.cpus) {
+                    int pid = cpu.getPID_Proceso_Actual();
+                    if (pid == 0) {
+                        cpuObjetivo = cpu;
+                        break;
                     }
-                    break;
-
-                case "FCFS":
-                case "SJF":
-                case "HRRN":
-                    // No preemptivos: solo cambiar cuando el proceso termina
-                    // Ya manejado en finalizacion_Proceso_FCFS()
-                    break;
-
-                default:
-                    // Otros algoritmos futuros
-                    break;
+                    BCP bcp = this.memoria.obtener_Datos_BCP(pid);
+                    if (bcp != null) {
+                        int r = 0;
+                        try { r = Integer.parseInt(bcp.getRafaga_Restante()); } catch (NumberFormatException e) {}
+                        if (r > peorRafaga) {
+                            peorRafaga = r;
+                            cpuObjetivo = cpu;
+                        }
+                    }
+                }
+                if (cpuObjetivo != null && cpuObjetivo.getPID_Proceso_Actual() != candidato) {
+                    int actualPid = cpuObjetivo.getPID_Proceso_Actual();
+                    if (actualPid != 0) {
+                        this.memoria.actualizar_Estado_BCP(actualPid, "Listo");
+                    }
+                    Despachador.despachador(cpuObjetivo, memoria, candidato);
+                    this.memoria.actualizar_Estado_BCP(candidato, "En Ejecucion");
+                    cpuObjetivo.setPID_Proceso_Actual(candidato);
+                }
+                break;
             }
+
+            case "FCFS":
+            case "SJF":
+            case "HRRN":
+            case "Lottery":
+                // No preemptivos: solo cambiar cuando el proceso termina
+                // Ya manejado en finalizacion_Proceso_FCFS()
+                break;
+
+            default:
+                break;
         }
 
         return resultados;
