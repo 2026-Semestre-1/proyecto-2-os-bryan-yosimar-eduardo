@@ -3,6 +3,7 @@ package gui;
 import kernel.NucleoSO;
 import model.Almacenamiento;
 import model.BCP;
+import model.Codigo_ASM;
 import model.Memoria;
 import model.MemoriaPaginada;
 import dto.SnapshotSistema;
@@ -63,7 +64,9 @@ public class Ventana_Principal extends javax.swing.JFrame {
                 Paso_A_Paso_BTN = new javax.swing.JButton();
                 Limpiar_BTN = new javax.swing.JButton();
                 Estadisticas_BTN = new javax.swing.JButton();
-                Cargar_Archivos_BTN = new javax.swing.JButton();
+                Subir_Archivo_BTN = new javax.swing.JButton();
+                Crear_Proceso_BTN = new javax.swing.JButton();
+                Cantidad_Spinner = new javax.swing.JSpinner(new javax.swing.SpinnerNumberModel(1, 1, 20, 1));
                 jScrollPane1 = new javax.swing.JScrollPane();
                 Tabla_Procesos = new javax.swing.JTable();
                 jScrollPane2 = new javax.swing.JScrollPane();
@@ -98,8 +101,14 @@ public class Ventana_Principal extends javax.swing.JFrame {
                 Estadisticas_BTN.setText("Estadisticas");
                 Estadisticas_BTN.addActionListener(this::Estadisticas_BTNActionPerformed);
 
-                Cargar_Archivos_BTN.setText("Cargar Archivos");
-                Cargar_Archivos_BTN.addActionListener(this::Cargar_Archivos_BTNActionPerformed);
+                Subir_Archivo_BTN.setText("Subir Archivo ASM");
+                Subir_Archivo_BTN.addActionListener(this::Subir_Archivo_BTNActionPerformed);
+
+                Crear_Proceso_BTN.setText("Crear Proceso(ces)");
+                Crear_Proceso_BTN.addActionListener(this::Crear_Proceso_BTNActionPerformed);
+                Crear_Proceso_BTN.setEnabled(false);
+
+                Cantidad_Spinner.setPreferredSize(new java.awt.Dimension(60, 26));
 
                 Tabla_Procesos.setModel(new javax.swing.table.DefaultTableModel(
                                 new Object[][] {
@@ -179,6 +188,17 @@ public class Ventana_Principal extends javax.swing.JFrame {
                                                 "Posicion", "Valor"
                                 }));
                 jScrollPane4.setViewportView(Tabla_Almacenamiento);
+
+                Tabla_Archivos = new javax.swing.JTable();
+                Tabla_Archivos.setModel(new javax.swing.table.DefaultTableModel(
+                                new Object[][] {},
+                                new String[] { "Nombre", "Instrucciones" }));
+                Tabla_Archivos.getSelectionModel().addListSelectionListener(e -> {
+                        if (!e.getValueIsAdjusting()) {
+                                Crear_Proceso_BTN.setEnabled(Tabla_Archivos.getSelectedRow() >= 0);
+                        }
+                });
+                jScrollPane11 = new javax.swing.JScrollPane(Tabla_Archivos);
 
                 Lista_Procesos_Label.setText("Lista de procesos");
 
@@ -314,6 +334,7 @@ public class Ventana_Principal extends javax.swing.JFrame {
                 Seccion_Inferior_Tab.addTab("Estadisticas", jScrollPane6);
                 Seccion_Inferior_Tab.addTab("Paginacion", panelPaginacion);
                 Seccion_Inferior_Tab.addTab("Particiones", panelParticiones);
+                Seccion_Inferior_Tab.addTab("Archivos", jScrollPane11);
 
                 Tabla_Frames.getSelectionModel().addListSelectionListener(e -> {
                         if (!e.getValueIsAdjusting()) {
@@ -415,9 +436,16 @@ public class Ventana_Principal extends javax.swing.JFrame {
                                                                                                                                                 javax.swing.GroupLayout.DEFAULT_SIZE,
                                                                                                                                                 javax.swing.GroupLayout.PREFERRED_SIZE))
                                                                                                                 .addGroup(layout.createSequentialGroup()
-                                                                                                                                .addComponent(Cargar_Archivos_BTN)
-                                                                                                                                .addGap(18, 18, 18)
-                                                                                                                                .addComponent(Selector_Memoria_Label)
+                                                                .addComponent(Subir_Archivo_BTN)
+                                                                .addGap(6, 6, 6)
+                                                                .addComponent(Crear_Proceso_BTN)
+                                                                .addGap(6, 6, 6)
+                                                                .addComponent(Cantidad_Spinner,
+                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                javax.swing.GroupLayout.DEFAULT_SIZE,
+                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                                .addGap(18, 18, 18)
+                                                                .addComponent(Selector_Memoria_Label)
                                                                                                                                 .addGap(5, 5, 5)
                                                                                                                                 .addComponent(Selector_Memoria,
                                                                                                                                                 javax.swing.GroupLayout.PREFERRED_SIZE,
@@ -486,7 +514,12 @@ public class Ventana_Principal extends javax.swing.JFrame {
                                                                 .addGap(28, 28, 28)
                                                                 .addGroup(layout.createParallelGroup(
                                                                                 javax.swing.GroupLayout.Alignment.BASELINE)
-                                                                                .addComponent(Cargar_Archivos_BTN)
+                                                                                .addComponent(Subir_Archivo_BTN)
+                                                                                .addComponent(Crear_Proceso_BTN)
+                                                                                .addComponent(Cantidad_Spinner,
+                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                                javax.swing.GroupLayout.DEFAULT_SIZE,
+                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
                                                                                 .addComponent(Selector_Memoria_Label)
                                                                                 .addComponent(Selector_Memoria,
                                                                                                 javax.swing.GroupLayout.PREFERRED_SIZE,
@@ -658,7 +691,7 @@ public class Ventana_Principal extends javax.swing.JFrame {
 
         }
 
-        private void Cargar_Archivos_BTNActionPerformed(java.awt.event.ActionEvent evt) {
+        private void Subir_Archivo_BTNActionPerformed(java.awt.event.ActionEvent evt) {
 
                 JFileChooser seleccion_Archivos = new JFileChooser();
 
@@ -688,6 +721,29 @@ public class Ventana_Principal extends javax.swing.JFrame {
                         }
                 }
 
+                actualizar_Tabla_Archivos();
+
+        }
+
+        private void Crear_Proceso_BTNActionPerformed(java.awt.event.ActionEvent evt) {
+
+                int fila = Tabla_Archivos.getSelectedRow();
+                if (fila < 0) {
+                        return;
+                }
+
+                String nombreArchivo = (String) Tabla_Archivos.getModel().getValueAt(fila, 0);
+                int cantidad = (int) Cantidad_Spinner.getValue();
+
+                for (int i = 0; i < cantidad; i++) {
+                        int pid = nucleo.crearProceso(nombreArchivo);
+                        if (pid < 0) {
+                                JOptionPane.showMessageDialog(null,
+                                                "Error: No se pudo crear el proceso \"" + nombreArchivo + "\"");
+                                break;
+                        }
+                }
+
                 SnapshotSistema snap = nucleo.tomarSnapshot();
                 actualizar_Desde_Snapshot(snap);
 
@@ -706,6 +762,7 @@ public class Ventana_Principal extends javax.swing.JFrame {
                 actualizar_Tabla_Frames(snap.memoriaPaginada);
                 actualizar_Tabla_Paginas(snap.memoriaPaginada);
                 actualizar_Tabla_Particiones(snap.particiones);
+                actualizar_Tabla_Archivos();
         }
 
         public void iniciar_Contenido_Base_tablas() {
@@ -787,6 +844,18 @@ public class Ventana_Principal extends javax.swing.JFrame {
 
                 for (int i = 0; i < pMemoria.getEspacio_Total(); i++) {
                         modeloTabla.addRow(new Object[] { i, memoria_Actual.get(i) });
+                }
+        }
+
+        public void actualizar_Tabla_Archivos() {
+                DefaultTableModel modeloTabla = (DefaultTableModel) Tabla_Archivos.getModel();
+                modeloTabla.setRowCount(0);
+
+                List<String> nombres = nucleo.listarArchivos();
+                for (String nombre : nombres) {
+                        Codigo_ASM codigo = nucleo.obtenerPrograma(nombre);
+                        int instrucciones = (codigo != null) ? codigo.getContador_Intrucciones() : 0;
+                        modeloTabla.addRow(new Object[] { nombre, instrucciones });
                 }
         }
 
@@ -1027,7 +1096,11 @@ public class Ventana_Principal extends javax.swing.JFrame {
 
         private javax.swing.JLabel Almacenamiento_Label;
         private javax.swing.JLabel BCP_Label;
-        private javax.swing.JButton Cargar_Archivos_BTN;
+        private javax.swing.JButton Subir_Archivo_BTN;
+        private javax.swing.JButton Crear_Proceso_BTN;
+        private javax.swing.JSpinner Cantidad_Spinner;
+        private javax.swing.JTable Tabla_Archivos;
+        private javax.swing.JScrollPane jScrollPane11;
         private javax.swing.JButton Ejecutar_BTN;
         private javax.swing.JButton Estadisticas_BTN;
         private javax.swing.JButton Limpiar_BTN;
