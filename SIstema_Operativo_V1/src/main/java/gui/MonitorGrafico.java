@@ -2,6 +2,7 @@ package gui;
 
 import dto.SnapshotSistema;
 import model.BCP;
+import model.CPU;
 
 import javax.swing.JPanel;
 import java.awt.BasicStroke;
@@ -49,6 +50,16 @@ public class MonitorGrafico extends JPanel {
 
         List<ProcesoBar> barras = new ArrayList<>();
 
+        java.util.Map<Integer, Integer> pidACpu = new java.util.HashMap<>();
+        if (snapshot.estadoCPUs != null) {
+            for (CPU cpu : snapshot.estadoCPUs) {
+                int pid = cpu.getPID_Proceso_Actual();
+                if (pid != 0) {
+                    pidACpu.put(pid, cpu.getNumero_CPU());
+                }
+            }
+        }
+
         for (BCP bcp : snapshot.todosLosBCP) {
             String nombre = bcp.getNombre_Programa();
             int pid = bcp.getPID();
@@ -57,7 +68,12 @@ public class MonitorGrafico extends JPanel {
             int duracion;
             try { duracion = Integer.parseInt(bcp.getTiempo_Ejecucion()); } catch (NumberFormatException e) { duracion = 0; }
             String estado = bcp.getEstado();
-            barras.add(new ProcesoBar(nombre + " (" + pid + ")", rafagaRestante, duracion, estado));
+            Integer cpuNum = pidACpu.get(pid);
+            String label = nombre + " (" + pid + ")";
+            if (cpuNum != null && "En Ejecucion".equals(estado)) {
+                label += " [CPU " + cpuNum + "]";
+            }
+            barras.add(new ProcesoBar(label, rafagaRestante, duracion, estado));
         }
 
         for (String p : snapshot.pendientes) {
