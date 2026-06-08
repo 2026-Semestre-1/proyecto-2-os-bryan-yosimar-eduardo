@@ -423,6 +423,25 @@ public class Memoria {
         return 0;
     }
 
+    /**
+     * Nombre: modificar_CPU_Asignada
+     * 
+     * Descripcion: Modifica el CPU asignado al BCP.
+     * 
+     * @param pPID          (int): PID del proceso.
+     * @param pCPU_Asignada (int): CPU asignado.
+     * @return (int): 0 si el CPU asignado se modifico correctamente, 1 si no se
+     *         encontro la BCP.
+     */
+    public int modificar_CPU_Asignada(int pPID, int pCPU_Asignada) {
+        int posicion_BCP = buscar_Posicion_BCP(pPID);
+        if (posicion_BCP == -1) {
+            return 1;
+        }
+        Memoria_Principal.put(posicion_BCP + 13, String.valueOf(pCPU_Asignada));
+        return 0;
+    }
+
     public int liberar_Memoria(int pDireccion) {
         if (pDireccion < espacio_OS) {
             return 1;

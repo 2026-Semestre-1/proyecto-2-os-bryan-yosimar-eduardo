@@ -8,6 +8,7 @@ import model.CPU;
 import model.Codigo_ASM;
 import dto.SnapshotSistema;
 
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -314,12 +315,14 @@ public class NucleoSO {
     }
 
     public List<String> listarArchivos() {
-        if (almacenamiento == null) return new ArrayList<>();
+        if (almacenamiento == null)
+            return new ArrayList<>();
         return almacenamiento.obtenerNombresArchivos();
     }
 
     public Codigo_ASM obtenerPrograma(String nombreArchivo) {
-        if (almacenamiento == null || planificador == null) return null;
+        if (almacenamiento == null || planificador == null)
+            return null;
         return this.planificador.obtener_Programa_Almacenamiento(almacenamiento, nombreArchivo);
     }
 
@@ -376,6 +379,7 @@ public class NucleoSO {
     public boolean comprobar_Finalizacion_Proceso_CPU(CPU pCpu) {
         if (pCpu.equals(null))
             return false;
+
         int PID_actual = pCpu.getPID_Proceso_Actual();
         int proceso_Finalizado = this.controlador_Memoria.comprobar_Finalizacion_Proceso(PID_actual);
         if (proceso_Finalizado == 1) {
@@ -393,7 +397,43 @@ public class NucleoSO {
         if (this.cpus.isEmpty())
             return;
         int PID_actual = this.cpus.get(0).getPID_Proceso_Actual();
-        memoria.actualizar_Registros_BCP(PID_actual, this.cpus.get(0));
+        memoria.actualizar_Registros_BCP(PID_actual, pCPU);
+
+        // Aqui se procedera a sincronizar los datos de la BPC guardada en el
+        // planificador con
+        // la BCP guardada en memoria.
+        sincronizar_Datos_Memoria_BCP_Planificador(PID_actual);
+
+    }
+
+    public void sincronizar_Datos_Memoria_BCP_Planificador(int pPID) {
+
+        // Se obtiene los datos de la BCP.
+        BCP bcp_memoria = this.memoria.obtener_Datos_BCP(pPID);
+
+        // Se obtiene la lista de procesos preparados del planificador.
+        Map<Integer, BCP> procesos_preparados = this.planificador.getCola_Procesos_Nuevos();
+
+        // Obtener del diccionario el BCP con el PID indicado.
+        BCP bcp_proceso = procesos_preparados.get(pPID);
+        if (bcp_memoria == null || bcp_proceso == null) {
+            return;
+        }
+
+        // Sincronizar los datos de ambas BCP.
+        // Asignar a la BCP de la memoria, el nombre del archivo y los tiempo.
+        bcp_memoria.setNombre_Programa(bcp_proceso.getNombre_Programa());
+        bcp_memoria.setTamanoProceso(bcp_proceso.getTamanoProceso());
+        bcp_memoria.set_momento_creacion(bcp_proceso.get_momento_creacion());
+        bcp_memoria.set_momento_finalizacion(bcp_proceso.get_momento_finalizacion());
+        bcp_memoria.setOverlayActual(bcp_proceso.getOverlayActual());
+        bcp_memoria.setTotalOverlays(bcp_proceso.getTotalOverlays());
+        bcp_memoria.setTieneOverlay(bcp_proceso.isTieneOverlay());
+        bcp_memoria.setPosInicioOverlayMV(bcp_proceso.getPosInicioOverlayMV());
+
+        // Asignar la BCP de la memoria al planificador.
+        procesos_preparados.put(pPID, bcp_memoria);
+
     }
 
     public int finalizacion_Proceso_FCFS(int pPID_Actual) {
@@ -403,12 +443,16 @@ public class NucleoSO {
         }
         if (cpu == null)
             return 1;
+
+        int tiempo_actual = cpu.getTiempo_CPU();
+        this.memoria.actualizar_Estado_BCP(pPID_Actual, "Listo");
         cpu.modificar_PC(-1);
         this.sincronizar_Datos_CPU_Memoria_BCP(cpu);
-        this.planificador.finalizacion_Procesos(memoria, pPID_Actual, cpu.getTiempo_CPU());
-        this.planificador.cargarLote(memoria, almacenamiento, cpu.getTiempo_CPU());
+        this.planificador.finalizacion_Procesos(memoria, pPID_Actual, tiempo_actual);
+        this.planificador.cargarLote(memoria, almacenamiento, tiempo_actual);
         this.planificador.cambiar_Estado_Proceso_Nuevo();
         cpu.reiniciar_Datos_CPU();
+
         if (this.planificador.hay_Procesos_Nuevos()) {
             System.out.println("--> Controlador Principal: Hay procesos nuevos");
             int PID_siguiente = this.planificador.seleccionarSiguiente();
@@ -502,8 +546,20 @@ public class NucleoSO {
             int candidato = planificador.seleccionarSiguiente();
 
             switch (nombreAlgoritmo) {
+
                 case "SRT":
+                    // Se debe poner el estado del PID actual de este CPU en "Listo"
+                    this.memoria.actualizar_Estado_BCP(actualPid, "Listo");
+                    if (candidato != -1 && candidato != actualPid) {
+                        Despachador.despachador(cpu, memoria, candidato);
+                        memoria.actualizar_Estado_BCP(candidato, "En Ejecuccion");
+                    }
+                    break;
+
                 case "RR":
+                    // Aqui se tendria que comprobar si ya llego al quantum que se establecio para
+                    // este algoritmo.
+
                     // Preemptivos: revisar en cada tick
                     if (candidato != -1 && candidato != actualPid) {
                         Despachador.despachador(cpu, memoria, candidato);
@@ -571,10 +627,8 @@ public class NucleoSO {
         this.sincronizar_Datos_CPU_Memoria_BCP(this.cpus.get(0));
     }
 
-    public void procesar_Finalizacion_Proceso() {
-        if (this.cpus.isEmpty())
-            return;
-        finalizacion_Proceso_FCFS(this.cpus.get(0).getPID_Proceso_Actual());
+    public void procesar_Finalizacion_Proceso(CPU pCPU_Actual) {
+        finalizacion_Proceso_FCFS(pCPU_Actual.getPID_Proceso_Actual());
     }
 
     public BCP obtener_Datos_BCP_Actual() {
@@ -607,7 +661,7 @@ public class NucleoSO {
         this.cpus.clear();
         this.controlador_Memoria = null;
         this.planificador = null;
-        this.contador_ciclos = 0;
+        // this.contador_ciclos = 0;
         this.programa_Iniciado = false;
     }
 

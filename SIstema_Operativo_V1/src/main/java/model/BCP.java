@@ -31,6 +31,9 @@ public class BCP {
 
     private String Proximo_Proceso;
     private int[] Pila;
+
+    // Datos que no tiene la BCP que se almacena en memoria.
+    // Todos los siguientes.
     private String nombre_Programa;
     private int espacio_Total_Programa;
     private LocalTime momento_creacion;
@@ -290,6 +293,10 @@ public class BCP {
 
     public int getTamanoProceso() {
         return espacio_Total_Programa;
+    }
+
+    public void setTamanoProceso(int pTamanoProceso) {
+        this.espacio_Total_Programa = pTamanoProceso;
     }
 
     public void setNombre_Programa(String nombre_Programa) {

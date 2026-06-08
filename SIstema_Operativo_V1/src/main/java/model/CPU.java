@@ -8,6 +8,7 @@ import util.Separar_Instrucciones;
 public class CPU {
 
     private int tiempo_CPU = 0;
+
     private int numero_CPU;
     private int PC;
     private String IR;
@@ -40,6 +41,10 @@ public class CPU {
         this.AC = this.AX = this.BX = this.CX = 0;
         this.DX = "";
         this.flag_CMP = 0;
+    }
+
+    public int getNumero_CPU() {
+        return numero_CPU;
     }
 
     public int getTiempo_CPU() {

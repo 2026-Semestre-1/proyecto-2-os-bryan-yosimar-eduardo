@@ -52,30 +52,30 @@ public class AlgoritmoSJF implements IAlgoritmoPlanificacion {
         // Cuando ya termina el proceso en ejecucion, entonces se mira cual es el
         // siguiente mas corto.
 
-        int bestPid = -1;
+        int mejorPID = -1;
 
         // Establecemos una duraccion muy grande para comparrla con las demas.
-        int bestDur = Integer.MAX_VALUE;
-        int bestLlegada = Integer.MAX_VALUE;
+        int mejorDuracion = Integer.MAX_VALUE;
+        int mejorLlegada = Integer.MAX_VALUE;
 
         // Recorre la cola de procesos nuevos (LinkedHashMap mantiene orden de
         // inserción)
         for (Map.Entry<Integer, BCP> entry : ctx.getCola_Procesos_Nuevos().entrySet()) {
             BCP bcp = entry.getValue();
             String estado = bcp.getEstado();
-            if (!"Preparado".equals(estado) && !"En Ejecuccion".equals(estado))
+            if (!"Preparado".equals(estado))
                 continue;
 
             int dur = parseStringToInt(bcp.getTiempo_Ejecucion());
-            // int llegada = parseStringToInt(bcp.getTiempo_Llegada());
+            int llegada = parseStringToInt(bcp.getTiempo_Llegada());
 
-            if (dur < bestDur) {
-                bestDur = dur;
-                // bestLlegada = llegada;
-                bestPid = bcp.getPID();
+            if (dur < mejorDuracion || (dur == mejorDuracion && llegada < mejorLlegada)) {
+                mejorDuracion = dur;
+                mejorLlegada = llegada;
+                mejorPID = bcp.getPID();
             }
         }
-        return bestPid;
+        return mejorPID;
     }
 
     @Override
