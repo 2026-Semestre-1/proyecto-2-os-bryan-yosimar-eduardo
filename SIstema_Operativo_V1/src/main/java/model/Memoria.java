@@ -426,13 +426,13 @@ public class Memoria {
      * @return (int): 0 si el tiempo de espera se modifico correctamente, 1 si no se
      *         encontro la BCP.
      */
-    public int modificar_Tiempo_Espera_Procesos_Listos(List<BCP> pLista_Procesos_Listos) {
+    public int modificar_Tiempo_Espera_Procesos_Listos(Map<Integer, BCP> pLista_Procesos_Listos) {
 
         if (pLista_Procesos_Listos == null) {
             return -1;
         }
 
-        for (BCP bcp : pLista_Procesos_Listos) {
+        for (BCP bcp : pLista_Procesos_Listos.values()) {
             // Para saltarse los procesos que esten en ejecucion.
             if (bcp.getEstado().equals("En Proceso")) {
                 continue;
@@ -456,6 +456,17 @@ public class Memoria {
             bcp.setTiempo_Espera(String.valueOf(tiempo_Espera));
         }
 
+        return 0;
+    }
+
+    public int modificar_Tiempo_Espera_BCP(int pPID) {
+        int posicion_BCP = buscar_Posicion_BCP(pPID);
+        if (posicion_BCP == -1) {
+            return 1;
+        }
+        int tiempo_Espera = Integer.parseInt(Memoria_Principal.get(posicion_BCP + 27));
+        tiempo_Espera++;
+        Memoria_Principal.put(posicion_BCP + 27, String.valueOf(tiempo_Espera));
         return 0;
     }
 

@@ -19,7 +19,7 @@ public class AlgoritmoHRRN implements IAlgoritmoPlanificacion {
             int tiempoActualCPU) {
 
         // Igual que SJF/SRT: cargar procesos mientras haya espacio (<5)
-        while (ctx.getCola_Procesos_Nuevos().size() < 5) {
+        while (ctx.getCola_Procesos_Nuevos().size() < ctx.getMaxProcesosSimultaneos()) {
             if (ctx.getCola_Programas_Pendientes().isEmpty())
                 break;
 
@@ -37,7 +37,7 @@ public class AlgoritmoHRRN implements IAlgoritmoPlanificacion {
 
         int mejorPID = -1;
         double mejorRatio = -1.0;
-        long mejorLlegada = Long.MAX_VALUE;
+        int mejorLlegada = Integer.MAX_VALUE;
 
         for (Map.Entry<Integer, BCP> entry : ctx.getCola_Procesos_Nuevos().entrySet()) {
             BCP bcp = entry.getValue();

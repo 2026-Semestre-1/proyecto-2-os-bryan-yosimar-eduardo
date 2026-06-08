@@ -16,7 +16,7 @@ public class AlgoritmoSRT implements IAlgoritmoPlanificacion {
     public void cargarLote(Planificador ctx, Memoria memoria, Almacenamiento almacenamiento,
             GestorMemoria controlador, int tiempoActualCPU) {
         // Igual que SJF: cargar procesos mientras haya espacio (<5)
-        while (ctx.getCola_Procesos_Nuevos().size() < 5) {
+        while (ctx.getCola_Procesos_Nuevos().size() < ctx.getMaxProcesosSimultaneos()) {
             if (ctx.getCola_Programas_Pendientes().isEmpty())
                 break;
 

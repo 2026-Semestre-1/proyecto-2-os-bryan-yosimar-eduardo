@@ -19,6 +19,7 @@ public class Planificador {
     private List<String> cola_Programas_Pendientes;
     private Map<Integer, BCP> cola_Procesos_Nuevos;
     private List<BCP> cola_Procesos_Terminados;
+
     private GestorMemoria controlador_Memoria;
     private int banderaOverlay = 0;
     private IAlgoritmoPlanificacion algoritmo;
@@ -328,6 +329,9 @@ public class Planificador {
         this.algoritmo = algoritmo;
     }
 
+    // ############## Seccion de la parte de la interfaz de planificacion
+    // #############
+
     public void cargarLote(Memoria memoria, Almacenamiento almacenamiento, int tiempoActualCPU) {
         if (this.algoritmo == null) {
             System.out.println("Planificador: No hay algoritmo configurado.");
@@ -341,6 +345,10 @@ public class Planificador {
             return -1;
         }
         return this.algoritmo.seleccionarSiguiente(this);
+    }
+
+    public String getNombreAlgoritmo() {
+        return this.algoritmo.getNombre();
     }
 
     public boolean hay_Procesos_Nuevos() {

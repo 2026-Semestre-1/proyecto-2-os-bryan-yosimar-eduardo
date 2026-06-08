@@ -344,9 +344,10 @@ public class NucleoSO {
         cpu.setPID_Proceso_Actual(pPID);
     }
 
-    public boolean comprobar_Finalizacion_Proceso() {
-        if (this.cpus.isEmpty()) return false;
-        int PID_actual = this.cpus.get(0).getPID_Proceso_Actual();
+    public boolean comprobar_Finalizacion_Proceso_CPU(CPU pCpu) {
+        if (pCpu.equals(null))
+            return false;
+        int PID_actual = pCpu.getPID_Proceso_Actual();
         int proceso_Finalizado = this.controlador_Memoria.comprobar_Finalizacion_Proceso(PID_actual);
         if (proceso_Finalizado == 1) {
             return true;
@@ -359,8 +360,9 @@ public class NucleoSO {
         }
     }
 
-    public void sincronizar_Datos_CPU_Memoria_BCP() {
-        if (this.cpus.isEmpty()) return;
+    public void sincronizar_Datos_CPU_Memoria_BCP(CPU pCPU) {
+        if (this.cpus.isEmpty())
+            return;
         int PID_actual = this.cpus.get(0).getPID_Proceso_Actual();
         memoria.actualizar_Registros_BCP(PID_actual, this.cpus.get(0));
     }
@@ -370,9 +372,10 @@ public class NucleoSO {
         if (cpu == null && !this.cpus.isEmpty()) {
             cpu = this.cpus.get(0);
         }
-        if (cpu == null) return 1;
+        if (cpu == null)
+            return 1;
         cpu.modificar_PC(-1);
-        this.sincronizar_Datos_CPU_Memoria_BCP();
+        this.sincronizar_Datos_CPU_Memoria_BCP(cpu);
         this.planificador.finalizacion_Procesos(memoria, pPID_Actual, cpu.getTiempo_CPU());
         this.planificador.cargarLote(memoria, almacenamiento, cpu.getTiempo_CPU());
         this.planificador.cambiar_Estado_Proceso_Nuevo();
@@ -394,6 +397,8 @@ public class NucleoSO {
         }
     }
 
+    // ############ Seccion para la parte de ejecucion #################
+
     public List<String> ejecutar() {
         if (!this.programa_Iniciado || this.cpus.isEmpty()) {
             return null;
@@ -402,7 +407,7 @@ public class NucleoSO {
         if (!this.hay_interrupcion) {
             cpu.reiniciar_Interrupciones();
             cpu.ejecutar_Siguiente_Instruccion();
-            this.sincronizar_Datos_CPU_Memoria_BCP();
+            this.sincronizar_Datos_CPU_Memoria_BCP(cpu);
             return this.procesar_Interrupciones(cpu.getPID_Proceso_Actual());
         } else {
             return null;
@@ -413,38 +418,89 @@ public class NucleoSO {
         if (!this.programa_Iniciado || this.cpus.isEmpty()) {
             return null;
         }
-        CPU cpu = this.cpus.get(0);
-        if (!this.comprobar_Finalizacion_Proceso()) {
-            if (!this.hay_interrupcion) {
-                int pid = cpu.getPID_Proceso_Actual();
-                int pc = cpu.getPC();
-                BCP bcp = this.controlador_Memoria.obtenerBCP(pid);
-                if (bcp != null && bcp.isTieneOverlay() && bcp.getOverlayActual() < bcp.getTotalOverlays()) {
-                    int particionInicio = controlador_MemoriaParticionada.getInicioParticionPorProceso(pid);
-                    int particionFin = particionInicio;
-                    for (Particion p : controlador_MemoriaParticionada.getParticiones()) {
-                        if (p.procesoAsignado == pid) {
-                            particionFin = p.fin;
-                            break;
+
+        List<String> resultados = new ArrayList<>();
+
+        // 1. Ejecutar una instrucción en cada CPU
+        for (CPU cpu : this.cpus) {
+            int pid = cpu.getPID_Proceso_Actual();
+
+            if (!this.comprobar_Finalizacion_Proceso_CPU(cpu)) {
+                if (!this.hay_interrupcion) {
+                    // --- Manejo de overlays (igual que tu código original) ---
+                    int pc = cpu.getPC();
+                    BCP bcp = this.controlador_Memoria.obtenerBCP(pid);
+                    if (bcp != null && bcp.isTieneOverlay() && bcp.getOverlayActual() < bcp.getTotalOverlays()) {
+                        int particionInicio = controlador_MemoriaParticionada.getInicioParticionPorProceso(pid);
+                        int particionFin = particionInicio;
+                        for (Particion p : controlador_MemoriaParticionada.getParticiones()) {
+                            if (p.procesoAsignado == pid) {
+                                particionFin = p.fin;
+                                break;
+                            }
+                        }
+                        if (pc > particionFin) {
+                            this.controlador_Memoria.swapOverlay(bcp);
+                            cpu.setPC(particionInicio);
                         }
                     }
-                    if (pc > particionFin) {
-                        this.controlador_Memoria.swapOverlay(bcp);
-                        cpu.setPC(particionInicio);
-                    }
+
+                    // --- Ejecución de instrucción ---
+                    cpu.reiniciar_Interrupciones();
+                    cpu.ejecutar_Siguiente_Instruccion();
+                    this.sincronizar_Datos_CPU_Memoria_BCP(cpu);
+
+                    // Modificar los tiempos de espera de los procesos cuyo estado sea listo.
+                    this.memoria.modificar_Tiempo_Espera_Procesos_Listos(this.planificador.getCola_Procesos_Nuevos());
+
+                    // Modificar la rafaga restante del proceso actual.
+                    this.memoria.modificar_Tiempo_Restante_BCP(pid);
+
+                    // Guardar resultado de interrupciones
+                    resultados.addAll(this.procesar_Interrupciones(pid));
                 }
-                cpu.reiniciar_Interrupciones();
-                cpu.ejecutar_Siguiente_Instruccion();
-                this.sincronizar_Datos_CPU_Memoria_BCP();
-                return this.procesar_Interrupciones(pid);
+            } else {
+                // Proceso finalizado
+                finalizacion_Proceso_FCFS(pid);
             }
-            return null;
-        } else {
-            finalizacion_Proceso_FCFS(cpu.getPID_Proceso_Actual());
-            return null;
         }
+
+        // 2. Fase de planificacion (según algoritmo)
+        String nombreAlgoritmo = planificador.getNombreAlgoritmo();
+
+        for (CPU cpu : this.cpus) {
+            int actualPid = cpu.getPID_Proceso_Actual();
+            int candidato = planificador.seleccionarSiguiente();
+
+            switch (nombreAlgoritmo) {
+                case "SRT":
+                case "RR":
+                    // Preemptivos: revisar en cada tick
+                    if (candidato != -1 && candidato != actualPid) {
+                        Despachador.despachador(cpu, memoria, candidato);
+                        memoria.actualizar_Estado_BCP(candidato, "En Ejecuccion");
+                    }
+                    break;
+
+                case "FCFS":
+                case "SJF":
+                case "HRRN":
+                    // No preemptivos: solo cambiar cuando el proceso termina
+                    // Ya manejado en finalizacion_Proceso_FCFS()
+                    break;
+
+                default:
+                    // Otros algoritmos futuros
+                    break;
+            }
+        }
+
+        return resultados;
     }
 
+    // ############ Fin de la seccion de ejecucion #################
+
+    // ############ Seccion para funciones auxiliares del proceso de ejecucion
     public List<String> procesar_Interrupciones(int pPID_Actual) {
         List<String> salida = new ArrayList<>();
         CPU cpu = this.cpus.isEmpty() ? null : this.cpus.get(0);
@@ -478,20 +534,23 @@ public class NucleoSO {
     }
 
     public void leer_Teclado(int pDato) {
-        if (this.cpus.isEmpty()) return;
+        if (this.cpus.isEmpty())
+            return;
         System.out.println("Dato: " + pDato);
         this.cpus.get(0).leer_Entrada_Teclado(pDato);
         this.hay_interrupcion = false;
-        this.sincronizar_Datos_CPU_Memoria_BCP();
+        this.sincronizar_Datos_CPU_Memoria_BCP(this.cpus.get(0));
     }
 
     public void procesar_Finalizacion_Proceso() {
-        if (this.cpus.isEmpty()) return;
+        if (this.cpus.isEmpty())
+            return;
         finalizacion_Proceso_FCFS(this.cpus.get(0).getPID_Proceso_Actual());
     }
 
     public BCP obtener_Datos_BCP_Actual() {
-        if (this.cpus.isEmpty()) return null;
+        if (this.cpus.isEmpty())
+            return null;
         int pid_ProcesoActual = this.cpus.get(0).getPID_Proceso_Actual();
         System.out.println("-> PID Proceso Actual: " + pid_ProcesoActual);
         return this.memoria.obtener_Datos_BCP(pid_ProcesoActual);
@@ -544,7 +603,9 @@ public class NucleoSO {
 
     public SnapshotSistema tomarSnapshot() {
         MemoriaPaginada mp = (controlador_Memoria != null) ? controlador_Memoria.getMemoriaPaginada() : null;
-        List<Particion> particiones = (controlador_MemoriaParticionada != null) ? controlador_MemoriaParticionada.getParticiones() : null;
+        List<Particion> particiones = (controlador_MemoriaParticionada != null)
+                ? controlador_MemoriaParticionada.getParticiones()
+                : null;
         if (this.cpus.isEmpty() || memoria == null) {
             return new SnapshotSistema(
                     memoria,
