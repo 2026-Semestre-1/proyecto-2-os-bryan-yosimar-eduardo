@@ -109,7 +109,7 @@ public class Memoria {
     }
 
     public int iniciar_Memoria_BCP(int pTamano_Proceso, int pPrioridad, int pProximo_Proceso, int pCPU_Asignada,
-            int pMomento_Llegada, int pDuracion_Estimada, int pos_Actual_MV, int pcInicial) {
+            int pMomento_Llegada, int pDuracion_Estimada, int pos_Actual_MV, int pcInicial, int pPID) {
 
         // registrar los datos iniciales de un nuevo proceso en memoria, se crea la BCP
         // que en la seccion del
@@ -119,7 +119,7 @@ public class Memoria {
         // como en la del usuario
         // para agregar una nueva BCP y cargar el programa.
 
-        int pid = asignar_Nuevo_PID_Proceso(); // Obtener el nuevo PID para esta BCP.
+        int pid = pPID;// asignar_Nuevo_PID_Proceso(); // Obtener el nuevo PID para esta BCP.
 
         // System.out.println("Memoria: Asignando nuevo PID: " + pid);
         // Registramos manualmente cada uno de las partes necesarias para la BCP.
@@ -129,7 +129,7 @@ public class Memoria {
         Memoria_Principal.put(posicion_Actual_OS, ((Integer) pid).toString());
 
         // STATE -> Estado del proceso. #1
-        Memoria_Principal.put(posicion_Actual_OS + 1, "NEW");
+        Memoria_Principal.put(posicion_Actual_OS + 1, "Preparado");
 
         // PRIORITY -> Prioridad del proceso. #2
         Memoria_Principal.put(posicion_Actual_OS + 2, ((Integer) pPrioridad).toString());
@@ -189,7 +189,7 @@ public class Memoria {
         Memoria_Principal.put(posicion_Actual_OS + 12, "NONE");
 
         // CPU asignada -> Se asigna la CPU a este proceso. #13
-        Memoria_Principal.put(posicion_Actual_OS + 13, "1");
+        Memoria_Principal.put(posicion_Actual_OS + 13, ((Integer) pCPU_Asignada).toString());
 
         // Momento en el que llega el proceso al planificador. #14
         Memoria_Principal.put(posicion_Actual_OS + 14, ((Integer) pMomento_Llegada).toString());

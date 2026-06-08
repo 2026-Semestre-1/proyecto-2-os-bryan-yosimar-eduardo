@@ -332,17 +332,19 @@ public class NucleoSO {
         }
         Codigo_ASM codigo = this.planificador.obtener_Programa_Almacenamiento(almacenamiento, nombreArchivo);
         if (codigo == null || codigo.getContador_Intrucciones() == 0) {
-            return -1;
+            return -2;
         }
         String nombreInstancia = this.planificador.getSiguienteNombreInstancia(nombreArchivo);
         int tiempoCPU = cpus.isEmpty() ? 0 : cpus.get(0).getTiempo_CPU();
         boolean creado = this.planificador.crearProcesoEnMemoria(nombreInstancia, codigo,
                 memoria, controlador_Memoria, tiempoCPU);
         if (!creado) {
-            return -1;
+            return -3;
         }
-        this.planificador.cambiar_Estado_Proceso_Nuevo();
+        // this.planificador.cambiar_Estado_Proceso_Nuevo();
         if (!programa_Iniciado) {
+
+            // Aqui se esta asignando solo cuando se empieza el programa
             int inicio = this.planificador.seleccionarSiguiente();
             if (inicio != -1) {
                 iniciar_Despachador(inicio);
@@ -449,8 +451,10 @@ public class NucleoSO {
         cpu.modificar_PC(-1);
         this.sincronizar_Datos_CPU_Memoria_BCP(cpu);
         this.planificador.finalizacion_Procesos(memoria, pPID_Actual, tiempo_actual);
+
         this.planificador.cargarLote(memoria, almacenamiento, tiempo_actual);
-        this.planificador.cambiar_Estado_Proceso_Nuevo();
+
+        // this.planificador.cambiar_Estado_Proceso_Nuevo();
         cpu.reiniciar_Datos_CPU();
 
         if (this.planificador.hay_Procesos_Nuevos()) {

@@ -436,16 +436,16 @@ public class Ventana_Principal extends javax.swing.JFrame {
                                                                                                                                                 javax.swing.GroupLayout.DEFAULT_SIZE,
                                                                                                                                                 javax.swing.GroupLayout.PREFERRED_SIZE))
                                                                                                                 .addGroup(layout.createSequentialGroup()
-                                                                .addComponent(Subir_Archivo_BTN)
-                                                                .addGap(6, 6, 6)
-                                                                .addComponent(Crear_Proceso_BTN)
-                                                                .addGap(6, 6, 6)
-                                                                .addComponent(Cantidad_Spinner,
-                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                javax.swing.GroupLayout.DEFAULT_SIZE,
-                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                                .addGap(18, 18, 18)
-                                                                .addComponent(Selector_Memoria_Label)
+                                                                                                                                .addComponent(Subir_Archivo_BTN)
+                                                                                                                                .addGap(6, 6, 6)
+                                                                                                                                .addComponent(Crear_Proceso_BTN)
+                                                                                                                                .addGap(6, 6, 6)
+                                                                                                                                .addComponent(Cantidad_Spinner,
+                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                                                                                                javax.swing.GroupLayout.DEFAULT_SIZE,
+                                                                                                                                                javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                                                                                                .addGap(18, 18, 18)
+                                                                                                                                .addComponent(Selector_Memoria_Label)
                                                                                                                                 .addGap(5, 5, 5)
                                                                                                                                 .addComponent(Selector_Memoria,
                                                                                                                                                 javax.swing.GroupLayout.PREFERRED_SIZE,
@@ -793,11 +793,20 @@ public class Ventana_Principal extends javax.swing.JFrame {
 
                 for (int i = 0; i < cantidad; i++) {
                         int pid = nucleo.crearProceso(nombreArchivo);
-                        if (pid < 0) {
+                        if (pid == -1) {
+                                JOptionPane.showMessageDialog(null,
+                                                "Error: No se pudo crear el proceso \"" + nombreArchivo + "\"");
+                                break;
+                        } else if (pid == -2) {
+                                JOptionPane.showMessageDialog(null,
+                                                "Error: No se pudo crear el proceso \"" + nombreArchivo + "\"");
+                                break;
+                        } else if (pid == -3) {
                                 JOptionPane.showMessageDialog(null,
                                                 "Error: No se pudo crear el proceso \"" + nombreArchivo + "\"");
                                 break;
                         }
+
                 }
 
                 SnapshotSistema snap = nucleo.tomarSnapshot();
