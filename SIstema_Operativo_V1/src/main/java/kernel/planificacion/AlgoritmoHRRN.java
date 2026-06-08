@@ -2,7 +2,6 @@ package kernel.planificacion;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 
 import kernel.GestorMemoria;
 import kernel.Planificador;
@@ -10,7 +9,6 @@ import model.Almacenamiento;
 import model.BCP;
 import model.Codigo_ASM;
 import model.Memoria;
-import util.Parser_String_To_Int;
 
 public class AlgoritmoHRRN implements IAlgoritmoPlanificacion {
 
@@ -36,7 +34,6 @@ public class AlgoritmoHRRN implements IAlgoritmoPlanificacion {
     public int seleccionarSiguiente(Planificador ctx) {
 
         int mejorPID = -1;
-        double mejorRatio = -1.0;
         int mejorLlegada = Integer.MAX_VALUE;
 
         for (Map.Entry<Integer, BCP> entry : ctx.getCola_Procesos_Nuevos().entrySet()) {
@@ -61,8 +58,6 @@ public class AlgoritmoHRRN implements IAlgoritmoPlanificacion {
         }
         return mejorPID;
     }
-
-    @Override
     public String getNombre() {
         return "HRRN";
     }

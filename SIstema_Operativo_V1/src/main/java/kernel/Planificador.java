@@ -25,6 +25,7 @@ public class Planificador {
     private IAlgoritmoPlanificacion algoritmo;
     private int quantum = 0;
     private int maxProcesosSimultaneos = 5;
+    private Map<String, Integer> contadorInstancias = new HashMap<>();
     private static final int TAMANO_BCP = 28;
 
     public Planificador() {
@@ -51,6 +52,12 @@ public class Planificador {
 
     public void setMaxProcesosSimultaneos(int maxProcesosSimultaneos) {
         this.maxProcesosSimultaneos = maxProcesosSimultaneos;
+    }
+
+    public String getSiguienteNombreInstancia(String nombreBase) {
+        int count = this.contadorInstancias.getOrDefault(nombreBase, 0) + 1;
+        this.contadorInstancias.put(nombreBase, count);
+        return nombreBase + "_" + count;
     }
 
     public void agregar_Programa_Pendiente(String nombre) {

@@ -98,41 +98,6 @@ public class Memoria {
         espacio_Usado_OS += 7;
     }
 
-    public int asignar_memoria_a_programa(Codigo_ASM pCodigo_ASM) {
-        int pos_inicial = posicion_Actual_Usuario;
-        int tamano_codigo = pCodigo_ASM.getContador_Intrucciones();
-        if (pos_inicial + tamano_codigo <= espacio_Total) {
-            List<Instruccion> instrucciones = pCodigo_ASM.getInstrucciones();
-            for (Instruccion instruccion_actual : instrucciones) {
-                Memoria_Principal.put(pos_inicial, instruccion_actual.get_Intruccion_Completa());
-                pos_inicial++;
-            }
-            this.posicion_Actual_Usuario += tamano_codigo;
-            this.espacio_Usado_Usuario += tamano_codigo;
-            return 0;
-        } else {
-            return 1;
-        }
-    }
-
-    public int modificar_valor_en_memoria(int pPosicion, String pValor) {
-        if (Memoria_Principal.containsKey(pPosicion)) {
-            Memoria_Principal.replace(pPosicion, pValor);
-            return 0;
-        } else {
-            return 1;
-        }
-    }
-
-    // ###################### Inicio Seccion del BCP ######################
-
-    /**
-     * Nombre: asignar_Nuevo_PID_Proceso
-     * 
-     * Descripcion: Asigna un nuevo PID al proceso.
-     * 
-     * @return (int): Nuevo PID.
-     */
     public int asignar_Nuevo_PID_Proceso() {
         int pid = 0;
         for (int i = 0; i < posicion_Actual_OS; i += TAMANO_BCP) {
@@ -143,22 +108,6 @@ public class Memoria {
         return pid + 1;
     }
 
-    /**
-     * Nombre: iniciar_Memoria_BCP
-     * 
-     * Descripcion: Inicia la memoria del BCP asignandole los valores iniciales.
-     * 
-     * @param pTamano_Proceso    (int): Tamano del proceso.
-     * @param pPrioridad         (int): Prioridad del proceso.
-     * @param pProximo_Proceso   (int): Proximo proceso.
-     * @param pCPU_Asignada      (int): CPU asignada.
-     * @param pMomento_Llegada   (int): Momento de llegada.
-     * @param pDuracion_Estimada (int): Duracion estimada.
-     * @param pos_Actual_MV      (int): Posicion actual de la MV.
-     * @param pcInicial          (int): PC inicial.
-     * @return (int): 0 si la memoria del BCP se inicio correctamente, 1 si no se
-     *         encontro espacio.
-     */
     public int iniciar_Memoria_BCP(int pTamano_Proceso, int pPrioridad, int pProximo_Proceso, int pCPU_Asignada,
             int pMomento_Llegada, int pDuracion_Estimada, int pos_Actual_MV, int pcInicial) {
 
@@ -286,16 +235,32 @@ public class Memoria {
         return pid;
     }
 
-    /**
-     * Nombre: actualizar_Registros_BCP
-     * 
-     * Descripcion: Actualiza los registros del BCP con los valores de la CPU.
-     * 
-     * @param pPID (int): PID del proceso.
-     * @param pCPU (CPU): CPU con los registros a actualizar.
-     * @return (int): 0 si los registros se actualizaron correctamente, 1 si no se
-     *         encontro la BCP.
-     */
+    public int asignar_memoria_a_programa(Codigo_ASM pCodigo_ASM) {
+        int pos_inicial = posicion_Actual_Usuario;
+        int tamano_codigo = pCodigo_ASM.getContador_Intrucciones();
+        if (pos_inicial + tamano_codigo <= espacio_Total) {
+            List<Instruccion> instrucciones = pCodigo_ASM.getInstrucciones();
+            for (Instruccion instruccion_actual : instrucciones) {
+                Memoria_Principal.put(pos_inicial, instruccion_actual.get_Intruccion_Completa());
+                pos_inicial++;
+            }
+            this.posicion_Actual_Usuario += tamano_codigo;
+            this.espacio_Usado_Usuario += tamano_codigo;
+            return 0;
+        } else {
+            return 1;
+        }
+    }
+
+    public int modificar_valor_en_memoria(int pPosicion, String pValor) {
+        if (Memoria_Principal.containsKey(pPosicion)) {
+            Memoria_Principal.replace(pPosicion, pValor);
+            return 0;
+        } else {
+            return 1;
+        }
+    }
+
     public int actualizar_Registros_BCP(int pPID, CPU pCPU) {
         int posicion_BCP = buscar_Posicion_BCP(pPID);
         if (posicion_BCP == -1) {
@@ -313,16 +278,6 @@ public class Memoria {
         return 0;
     }
 
-    /**
-     * Nombre: actualizar_Estado_BCP
-     * 
-     * Descripcion: Modifica el estado del BCP.
-     * 
-     * @param pPID    (int): PID del proceso.
-     * @param pEstado (String): Nuevo estado.
-     * @return (int): 0 si el estado se modifico correctamente, 1 si no se
-     *         encontro la BCP.
-     */
     public int actualizar_Estado_BCP(int pPID, String pEstado) {
         int posicion_BCP = buscar_Posicion_BCP(pPID);
         if (posicion_BCP == -1) {
@@ -332,16 +287,6 @@ public class Memoria {
         return 0;
     }
 
-    /**
-     * Nombre: actualizar_Priodidad_BCP
-     * 
-     * Descripcion: Modifica la prioridad del BCP.
-     * 
-     * @param pPID       (int): PID del proceso.
-     * @param pPriodidad (int): Nueva prioridad.
-     * @return (int): 0 si la prioridad se modifico correctamente, 1 si no se
-     *         encontro la BCP.
-     */
     public int actualizar_Priodidad_BCP(int pPID, int pPriodidad) {
         int posicion_BCP = buscar_Posicion_BCP(pPID);
         if (posicion_BCP == -1) {
@@ -351,18 +296,6 @@ public class Memoria {
         return 0;
     }
 
-    /**
-     * Nombre: modificar_Lista_Archivos_BCP
-     * 
-     * Descripcion: Modifica la lista de archivos del BCP. Agrega un nuevo archivo a
-     * la lista.
-     * 
-     * @param pPID           (int): PID del proceso.
-     * @param pNuevo_Archivo (String): Nuevo archivo a agregar.
-     * @return (int): 0 si la lista de archivos se modifico correctamente, 1 si no
-     *         se
-     *         encontro la BCP.
-     */
     public int modificar_Lista_Archivos_BCP(int pPID, String pNuevo_Archivo) {
         int posicion_BCP = buscar_Posicion_BCP(pPID);
         if (posicion_BCP == -1) {
@@ -378,16 +311,6 @@ public class Memoria {
         return 0;
     }
 
-    /**
-     * Nombre: modificar_Tiempo_Inicio_BCP
-     * 
-     * Descripcion: Modifica el tiempo de inicio del BCP.
-     * 
-     * @param pPID           (int): PID del proceso.
-     * @param pTiempo_Inicio (int): Tiempo de inicio.
-     * @return (int): 0 si el tiempo de inicio se modifico correctamente, 1 si no se
-     *         encontro la BCP.
-     */
     public int modificar_Tiempo_Inicio_BCP(int pPID, int pTiempo_Inicio) {
         int posicion_BCP = buscar_Posicion_BCP(pPID);
         if (posicion_BCP == -1) {
@@ -397,17 +320,6 @@ public class Memoria {
         return 0;
     }
 
-    /**
-     * Nombre: modificar_Tiempo_Finalizacion_BCP
-     * 
-     * Descripcion: Modifica el tiempo de finalizacion del BCP.
-     * 
-     * @param pPID                 (int): PID del proceso.
-     * @param pTiempo_Finalizacion (int): Tiempo de finalizacion.
-     * @return (int): 0 si el tiempo de finalizacion se modifico correctamente, 1 si
-     *         no se
-     *         encontro la BCP.
-     */
     public int modificar_Tiempo_Finalizacion_BCP(int pPID, int pTiempo_Finalizacion) {
         int posicion_BCP = buscar_Posicion_BCP(pPID);
         if (posicion_BCP == -1) {
@@ -511,16 +423,6 @@ public class Memoria {
         return 0;
     }
 
-    /**
-     * Nombre: liberar_Memoria
-     * 
-     * Descripcion: Libera la memoria ocupada por una direccion.
-     * 
-     * @param pDireccion (int): Direccion de memoria a liberar.
-     * @return (int): 0 si la memoria se libero correctamente, 1 si la direccion es
-     *         menor que el espacio del OS, 2 si la direccion es mayor que el
-     *         espacio total.
-     */
     public int liberar_Memoria(int pDireccion) {
         if (pDireccion < espacio_OS) {
             return 1;
@@ -533,16 +435,6 @@ public class Memoria {
         }
     }
 
-    /**
-     * Nombre: liberar_Memoria_Proceso
-     * 
-     * Descripcion: Libera la memoria ocupada por un proceso.
-     * 
-     * @param pPID (int): PID del proceso.
-     * @return (int): 0 si la memoria se libero correctamente, -1 si no se encontro
-     *         la
-     *         BCP.
-     */
     public int liberar_Memoria_Proceso(int pPID) {
         int posicion_BCP = buscar_Posicion_BCP(pPID);
         if (posicion_BCP == -1) {
@@ -561,16 +453,6 @@ public class Memoria {
         return posicion_Final;
     }
 
-    /**
-     * Nombre: agregar_Dato_Pila
-     * 
-     * Descripcion: Agrega un dato a la pila del proceso.
-     * 
-     * @param pPID  (int): PID del proceso.
-     * @param pDato (String): Dato a agregar a la pila.
-     * @return (int): 0 si el dato se agrego correctamente, 1 si no se encontro la
-     *         BCP, 2 si la pila esta llena.
-     */
     public int agregar_Dato_Pila(int pPID, String pDato) {
         int posicion_BCP = buscar_Posicion_BCP(pPID);
         if (posicion_BCP == -1) {
@@ -585,14 +467,6 @@ public class Memoria {
         return 2;
     }
 
-    /**
-     * Nombre: obtener_Dato_Pila
-     * 
-     * Descripcion: Obtiene un dato de la pila del proceso.
-     * 
-     * @param pPID (int): PID del proceso.
-     * @return (Integer): Dato obtenido de la pila del proceso.
-     */
     public Integer obtener_Dato_Pila(int pPID) {
         int posicion_BCP = buscar_Posicion_BCP(pPID);
         if (posicion_BCP == -1) {
@@ -608,14 +482,6 @@ public class Memoria {
         return null;
     }
 
-    /**
-     * Nombre: buscar_Posicion_BCP
-     * 
-     * Descripcion: Busca la posicion de la BCP en la memoria principal dado su PID.
-     * 
-     * @param pPID (int): PID del proceso.
-     * @return (int): Posicion de la BCP en la memoria principal.
-     */
     public int buscar_Posicion_BCP(int pPID) {
         for (int i = 0; i < espacio_OS; i += TAMANO_BCP) {
             if (Memoria_Principal.get(i) != null && !Memoria_Principal.get(i).equals("")) {
@@ -628,14 +494,6 @@ public class Memoria {
         return -1;
     }
 
-    /**
-     * Nombre: obtener_Datos_BCP
-     * 
-     * Descripcion: Obtiene los datos de la BCP desde la memoria principal.
-     * 
-     * @param pPID (int): PID del proceso.
-     * @return (BCP): BCP del proceso.
-     */
     public BCP obtener_Datos_BCP(int pPID) {
         int posicion_BCP = buscar_Posicion_BCP(pPID);
         if (posicion_BCP == -1) {
@@ -679,16 +537,6 @@ public class Memoria {
                 pila, rafaga_restante, tiempo_espera);
     }
 
-    /**
-     * Nombre: obtener_Datos_BCP_Pos_Inicio
-     * 
-     * Descripcion: Obtiene los datos de la BCP desde la memoria principal, dado su
-     * posicion inicial.
-     * 
-     * @param pPosicion_Inicial (int): Posicion inicial de la BCP en la memoria
-     *                          principal.
-     * @return (BCP): BCP del proceso.
-     */
     public BCP obtener_Datos_BCP_Pos_Inicio(int pPosicion_Inicial) {
         for (int i = 0; i < espacio_OS; i += TAMANO_BCP) {
             if (Memoria_Principal.get(i) != null && !Memoria_Principal.get(i).equals("")) {
@@ -702,14 +550,6 @@ public class Memoria {
         return null;
     }
 
-    /**
-     * Nombre: obtener_Lista_Archivos_Proceso
-     * 
-     * Descripcion: Obtiene la lista de archivos del proceso dado su PID.
-     * 
-     * @param pPID (int): PID del proceso.
-     * @return (List<String>): Lista de archivos del proceso.
-     */
     public List<String> obtener_Lista_Archivos_Proceso(int pPID) {
         List<String> lista_Archivos = new ArrayList<>();
         int posicion_BCP = buscar_Posicion_BCP(pPID);
@@ -724,16 +564,6 @@ public class Memoria {
         return lista_Archivos;
     }
 
-    /**
-     * Nombre: validar_Salto_Programa
-     * 
-     * Descripcion: Valida si el salto del programa es valido.
-     * 
-     * @param pPosicion_Destino (Integer): Posicion de destino del salto.
-     * @param pPID_Actual       (int): PID del proceso actual.
-     * @return (Integer): 0 si el salto es valido, 1 si es menor a la posicion
-     *         inicial, 2 si es mayor a la posicion final.
-     */
     public Integer validar_Salto_Programa(Integer pPosicion_Destino, int pPID_Actual) {
         int posicion_BCP = buscar_Posicion_BCP(pPID_Actual);
         if (posicion_BCP == -1) {
@@ -750,17 +580,6 @@ public class Memoria {
         }
     }
 
-    // ######################## Fin Seccion del BCP ########################
-
-    /**
-     * Nombre: validar_Espacio_Disponible_OS
-     * 
-     * Descripcion: Valida si el espacio disponible en el sistema operativo es
-     * suficiente para el proceso.
-     * 
-     * @param pEspacio_Necesario (int): Espacio necesario para el proceso.
-     * @return (int): 0 si el espacio es suficiente, 1 si no lo es.
-     */
     public int validar_Espacio_Disponible_OS(int pEspacio_Necesario) {
         int resultado = (espacio_Usado_OS + pEspacio_Necesario <= espacio_OS) ? 0 : 1;
         System.out.println("[DEBUG OS] usado=" + espacio_Usado_OS + " necesita=" + pEspacio_Necesario
@@ -768,15 +587,6 @@ public class Memoria {
         return resultado;
     }
 
-    /**
-     * Nombre: validar_Espacio_Disponible_Usuario
-     * 
-     * Descripcion: Valida si el espacio disponible en el sistema operativo es
-     * suficiente para el proceso.
-     * 
-     * @param pEspacio_Necesario (int): Espacio necesario para el proceso.
-     * @return (int): 0 si el espacio es suficiente, 1 si no lo es.
-     */
     public int validar_Espacio_Disponible_Usuario(int pEspacio_Necesario) {
         if (espacio_Usado_Usuario + pEspacio_Necesario <= espacio_Usuario) {
             return 0;
@@ -785,23 +595,12 @@ public class Memoria {
         }
     }
 
-    /**
-     * Nombre: soloKernel
-     * 
-     * Descripcion: Limpia la memoria principal, dejando solo el espacio del sistema
-     * operativo.
-     */
     public void soloKernel() {
         for (int i = espacio_OS; i < espacio_Total; i++) {
             Memoria_Principal.put(i, "");
         }
     }
 
-    /**
-     * Nombre: mostrar_Memoria
-     * 
-     * Descripcion: Muestra la memoria principal.
-     */
     public void mostrar_Memoria() {
         System.out.println("Mostrando memoria.\n");
         for (Map.Entry<Integer, String> entry : Memoria_Principal.entrySet()) {

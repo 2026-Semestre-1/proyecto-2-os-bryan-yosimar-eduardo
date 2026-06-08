@@ -280,11 +280,16 @@ public class NucleoSO {
     public List<String> cargar_archivo(String ruta, String pNombre_Archivo) {
         List<String> errores = new ArrayList<>();
         if (almacenamiento.existe_Archivo(pNombre_Archivo)) {
-            errores.add("1");
-            errores.add("Error: Ya existe un archivo con ese nombre.");
+            errores.add("0");
+            errores.add("El archivo ya existe en almacenamiento.");
             return errores;
         }
         Codigo_ASM codigo = GestorArchivos.Cargar_Archivo_ASM(ruta);
+        if (codigo == null) {
+            errores.add("5");
+            errores.add("Error: No se pudo leer el archivo.");
+            return errores;
+        }
         if (codigo.isHay_errores()) {
             errores.add("2");
             errores.add("Error:" + codigo.getErrores().toString());
@@ -292,32 +297,56 @@ public class NucleoSO {
         }
         if (codigo.getContador_Intrucciones() == 0) {
             errores.add("3");
-            errores.add("Error: El Archvivo esta vacio");
+            errores.add("Error: El archivo esta vacio");
             return errores;
         }
-        asignar_Almacenamiento(codigo, pNombre_Archivo);
-        this.planificador.extraer_Programas_Almacenamiento(almacenamiento);
-        this.planificador.cargarLote(memoria, almacenamiento, cpus.isEmpty() ? 0 : cpus.get(0).getTiempo_CPU());
+        int res = asignar_Almacenamiento(codigo, pNombre_Archivo);
+        if (res != 0) {
+            errores.add("6");
+            errores.add("Error: No hay espacio en almacenamiento.");
+            return errores;
+        }
+        System.out.println("[DEBUG UPLOAD] Archivo=" + pNombre_Archivo
+                + " almacenado con " + codigo.getContador_Intrucciones() + " instrucciones.");
+        errores.add("0");
+        errores.add("Exito al almacenar el archivo.");
+        return errores;
+    }
+
+    public List<String> listarArchivos() {
+        if (almacenamiento == null) return new ArrayList<>();
+        return almacenamiento.obtenerNombresArchivos();
+    }
+
+    public Codigo_ASM obtenerPrograma(String nombreArchivo) {
+        if (almacenamiento == null || planificador == null) return null;
+        return this.planificador.obtener_Programa_Almacenamiento(almacenamiento, nombreArchivo);
+    }
+
+    public int crearProceso(String nombreArchivo) {
+        if (memoria == null || almacenamiento == null || controlador_Memoria == null) {
+            return -1;
+        }
+        Codigo_ASM codigo = this.planificador.obtener_Programa_Almacenamiento(almacenamiento, nombreArchivo);
+        if (codigo == null || codigo.getContador_Intrucciones() == 0) {
+            return -1;
+        }
+        String nombreInstancia = this.planificador.getSiguienteNombreInstancia(nombreArchivo);
+        int tiempoCPU = cpus.isEmpty() ? 0 : cpus.get(0).getTiempo_CPU();
+        boolean creado = this.planificador.crearProcesoEnMemoria(nombreInstancia, codigo,
+                memoria, controlador_Memoria, tiempoCPU);
+        if (!creado) {
+            return -1;
+        }
         this.planificador.cambiar_Estado_Proceso_Nuevo();
-        System.out.println("[DEBUG CARGA] Archivo=" + pNombre_Archivo
-                + " | cola_Nuevos=" + this.planificador.getCola_Procesos_Nuevos().size()
-                + " | pendientes=" + this.planificador.getCola_Programas_Pendientes().size()
-                + " | OS usado=" + memoria.getEspacio_Usado_OS()
-                + "/" + memoria.getEspacio_OS());
-        if (programa_Iniciado == false) {
+        if (!programa_Iniciado) {
             int inicio = this.planificador.seleccionarSiguiente();
             if (inicio != -1) {
                 iniciar_Despachador(inicio);
-            } else {
-                errores.add("4");
-                errores.add("Error: No hay procesos nuevos para ejecutar.");
-                return errores;
+                programa_Iniciado = true;
             }
-            programa_Iniciado = true;
         }
-        errores.add("0");
-        errores.add("Exito al leer el archivo.");
-        return errores;
+        return 0;
     }
 
     public int asignar_Almacenamiento(Codigo_ASM codigo, String pNombre_Archivo) {
