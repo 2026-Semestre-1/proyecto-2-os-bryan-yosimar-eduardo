@@ -17,7 +17,7 @@ import model.MemoriaPaginada;
 public class GestorMemoria {
 
     private static final int POSICION_INICIO_BCP = 0;
-    private static final int TAMANO_BCP = 26;
+    private static final int TAMANO_BCP = 28;
 
     private Memoria Memoria_RAM;
     private Almacenamiento Disco;
