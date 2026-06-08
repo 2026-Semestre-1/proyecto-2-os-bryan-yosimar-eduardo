@@ -504,6 +504,8 @@ public class NucleoSO {
         // 1. Ejecutar una instrucción en cada CPU
         for (CPU cpu : this.cpus) {
             int pid = cpu.getPID_Proceso_Actual();
+            if (pid == 0)
+                continue;
 
             if (!this.comprobar_Finalizacion_Proceso_CPU(cpu)) {
                 if (!this.hay_interrupcion) {
@@ -729,6 +731,12 @@ public class NucleoSO {
         List<Particion> particiones = (controlador_MemoriaParticionada != null)
                 ? controlador_MemoriaParticionada.getParticiones()
                 : null;
+        List<BCP> todosLosBCP = (planificador != null)
+                ? new java.util.ArrayList<>(planificador.getCola_Procesos_Nuevos().values())
+                : new java.util.ArrayList<>();
+        List<String> pendientes = (planificador != null)
+                ? new java.util.ArrayList<>(planificador.getCola_Programas_Pendientes())
+                : new java.util.ArrayList<>();
         if (this.cpus.isEmpty() || memoria == null) {
             return new SnapshotSistema(
                     memoria,
@@ -738,7 +746,10 @@ public class NucleoSO {
                     new java.util.ArrayList<>(),
                     this.hay_interrupcion,
                     mp,
-                    particiones);
+                    particiones,
+                    todosLosBCP,
+                    pendientes,
+                    new java.util.ArrayList<>(this.cpus));
         }
         return new SnapshotSistema(
                 memoria,
@@ -748,6 +759,13 @@ public class NucleoSO {
                 this.planificador.getCola_Procesos_Terminados(),
                 this.hay_interrupcion,
                 mp,
-                particiones);
+                particiones,
+                todosLosBCP,
+                pendientes,
+                new java.util.ArrayList<>(this.cpus));
+    }
+
+    public List<CPU> getCpus() {
+        return this.cpus;
     }
 }
