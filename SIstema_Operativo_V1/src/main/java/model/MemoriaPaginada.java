@@ -167,12 +167,12 @@ public boolean asignarProceso(Codigo_ASM codigoASM, String nombreProceso) {
         }
     }
 
-    public String obtenerInstruccion(int posicionLogica, int memInit) {
+    public String obtenerInstruccion(int posicionLogica, int memInit, String nombreProceso) {
         int offsetRelativo = posicionLogica - memInit;
         int numPagina = offsetRelativo / pageSize;
         int offset = offsetRelativo % pageSize;
         for (TablaDePagina paginaFaltante : tablaDePaginas) {
-            if (paginaFaltante.getNumeroDePagina() == numPagina) {
+            if (paginaFaltante.getNumeroDePagina() == numPagina && paginaFaltante.getNombreProceso().equals(nombreProceso)) {
                 if (paginaFaltante.hayBitPresencia()) {
                     int numFrame = paginaFaltante.getNumeroDeFrame();
                     for (Frame f : frames) {
@@ -249,9 +249,13 @@ public boolean asignarProceso(Codigo_ASM codigoASM, String nombreProceso) {
         for (int i = 0; i < numFrames; i++) {
             Frame frame = frames[i];
             String contenido = "-";
-            if (frame != null && frame.getPagina() != null && frame.getPagina().getContenido() != null
-                    && !frame.getPagina().getContenido().isEmpty()) {
-                contenido = String.join(" ", frame.getPagina().getContenido());
+            if (frame != null && bitmap.get(i)) {
+                List<String> insts = new ArrayList<>();
+                for (int k = 0; k < pageSize; k++) {
+                    String val = memoriaPrincipal.get(frame.getDireccionBase() + k);
+                    if (val != null && !val.trim().isEmpty()) insts.add(val);
+                }
+                if (!insts.isEmpty()) contenido = String.join(" ", insts);
             }
             String rango = (frame != null) ? (frame.getDireccionBase() + " - " + (frame.getDireccionBase() + pageSize - 1)) : "-";
             resumen.add(new Object[] {

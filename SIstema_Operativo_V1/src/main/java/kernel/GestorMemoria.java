@@ -143,11 +143,21 @@ public class GestorMemoria {
                         idParticion = controlador_MemoriaParticionada.crearParticionDinamica(
                             tamanoTotalProceso, espacioUtilizable, this.Memoria_RAM.getEspacio_Total());
                     } catch (Exception e) {
-                        System.out.println("Error al crear particion dinamica: " + e.getMessage());
-                        break;
+                        System.out.println("RAM llena, usando memoria virtual");
+                        int pos = this.Disco.getPosicion_Memoria_Virtual();
+                        for (Instruccion inst : codigoASM.getInstrucciones()) {
+                            this.Disco.getMemoria_Secundaria().put(pos, inst.get_Intruccion_Completa());
+                            pos++;
+                        }
+                        this.Disco.setPosicion_Memoria_Virtual(pos);
+                        this.Disco.setEspacio_Usado_Memoria_Virtual(
+                            this.Disco.getEspacio_Usado_Memoria_Virtual() + tamanoTotalProceso);
+                        return 1;
                     }
                 }
-                cargarInstruccionesEnParticionDinamica(idParticion, codigoASM, pID);
+                if (idParticion != -1) {
+                    cargarInstruccionesEnParticionDinamica(idParticion, codigoASM, pID);
+                }
                 break;
 
         }
@@ -203,12 +213,27 @@ public class GestorMemoria {
                 }
                 break;         
                 
-            case "Dinamica":     
-                controlador_MemoriaParticionada.liberarMemoriaDinamica(pPID);
-                controlador_MemoriaParticionada.moverProcesosRamDinamica(Memoria_RAM);
-                controlador_MemoriaParticionada.compactacionMemoriaDinamica();
+            case "Dinamica":
                 int posBCP4 = this.Memoria_RAM.buscar_Posicion_BCP(pPID);
                 if (posBCP4 != -1) {
+                    String memInitStr = this.Memoria_RAM.obtener_Instruccion(posBCP4 + 3);
+                    if (memInitStr != null) {
+                        int memInit = Integer.parseInt(memInitStr.trim());
+                        if (memInit < this.Memoria_RAM.getEspacio_Total()) {
+                            controlador_MemoriaParticionada.liberarMemoriaDinamica(pPID);
+                            controlador_MemoriaParticionada.moverProcesosRamDinamica(Memoria_RAM);
+                            controlador_MemoriaParticionada.compactacionMemoriaDinamica();
+                        } else {
+                            int memEnd = Integer.parseInt(this.Memoria_RAM.obtener_Instruccion(posBCP4 + 4));
+                            int tamTotalRAM = this.Memoria_RAM.getEspacio_Total();
+                            int posIniMV = this.Disco.getEspacio_Indices();
+                            int posRealIni = posIniMV + (memInit - tamTotalRAM);
+                            int posRealFin = posIniMV + (memEnd - tamTotalRAM);
+                            for (int i = posRealIni; i <= posRealFin; i++) {
+                                this.Disco.getMemoria_Secundaria().put(i, "");
+                            }
+                        }
+                    }
                     liberar_Memoria_BCP(posBCP4);
                 }
                 break;
@@ -284,11 +309,14 @@ public class GestorMemoria {
                 }
                 return 3;
 
-            case "Dinamica": 
-            if (controlador_MemoriaParticionada.hayParticionesDinamicasLibres(tamano, memoria)) {
-                return 1;
-            }
-            return 0;
+            case "Dinamica":
+                if (controlador_MemoriaParticionada.hayParticionesDinamicasLibres(tamano, memoria)) {
+                    return 1;
+                }
+                if (this.Disco.getEspacio_Usado_Memoria_Virtual() + tamano <= this.Disco.getEspacio_Memoria_Virtual()) {
+                    return 2;
+                }
+                return 0;
             
 
         }
@@ -523,6 +551,13 @@ public class GestorMemoria {
         if (pc == tam) {
             return 1;
         }
+        if (cachedBcp != null && cachedBcp.isTieneOverlay()) {
+            int pcActual = Integer.parseInt(bcp.getPC());
+            String nextInst = Memoria_RAM.getMemoria_Principal().get(pcActual);
+            if (nextInst == null || nextInst.trim().isEmpty()) {
+                return 1;
+            }
+        }
         return 0;
     }
 
@@ -547,7 +582,11 @@ public class GestorMemoria {
             case("Paginacion"):
                 int memInit = encontrarMemInit(pPosicion);
                 if (memInit == -1) return null;
-                return memoriaPaginada.obtenerInstruccion(pPosicion, memInit);
+                int pid = encontrarPIDPorPosicion(pPosicion);
+                if (pid == -1) return null;
+                BCP bcpPaginacion = obtenerBCP(pid);
+                if (bcpPaginacion == null) return null;
+                return memoriaPaginada.obtenerInstruccion(pPosicion, memInit, bcpPaginacion.getNombre_Programa());
 
             case("ParticionIgual"):
                 return Memoria_RAM.getMemoria_Principal().get(pPosicion);
@@ -556,7 +595,12 @@ public class GestorMemoria {
                 return Memoria_RAM.getMemoria_Principal().get(pPosicion);
 
             case("Dinamica"):
-                return Memoria_RAM.getMemoria_Principal().get(pPosicion);
+                if (pPosicion < Memoria_RAM.getEspacio_Total()) {
+                    return Memoria_RAM.getMemoria_Principal().get(pPosicion);
+                }
+                int tamTotalRAM = this.Memoria_RAM.getEspacio_Total();
+                int posReal = pPosicion - tamTotalRAM;
+                return this.Disco.optener_Instruccion(posReal);
 
         }
 
@@ -585,6 +629,28 @@ public class GestorMemoria {
                         int memEnd = Integer.parseInt(memEndStr.trim());
                         if (posicion >= memInit && posicion <= memEnd) {
                             return memInit;
+                        }
+                    } catch (NumberFormatException e) {
+                        continue;
+                    }
+                }
+            }
+        }
+        return -1;
+    }
+
+    private int encontrarPIDPorPosicion(int posicion) {
+        for (int i = POSICION_INICIO_BCP; i < Memoria_RAM.getEspacio_OS(); i += TAMANO_BCP) {
+            String pidStr = Memoria_RAM.obtener_Instruccion(i);
+            if (pidStr != null && !pidStr.trim().isEmpty()) {
+                String memInitStr = Memoria_RAM.obtener_Instruccion(i + 3);
+                String memEndStr = Memoria_RAM.obtener_Instruccion(i + 4);
+                if (memInitStr != null && memEndStr != null) {
+                    try {
+                        int memInit = Integer.parseInt(memInitStr.trim());
+                        int memEnd = Integer.parseInt(memEndStr.trim());
+                        if (posicion >= memInit && posicion <= memEnd) {
+                            return Integer.parseInt(pidStr.trim());
                         }
                     } catch (NumberFormatException e) {
                         continue;

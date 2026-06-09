@@ -127,7 +127,7 @@ public class Controlador_MemoriaParticionada {
         int i = 0;
         while (true) {
             int fin = inicio + tamanoParticion - 1;
-            if (fin > tamanioTotalRAM) break;
+            if (fin >= tamanioTotalRAM) break;
             particiones.add(new Particion(i, inicio, fin));
             System.out.println("Part " + i + ": inicio=" + inicio + " fin=" + fin);
             inicio = fin + 1;
@@ -143,7 +143,7 @@ public class Controlador_MemoriaParticionada {
         for (int i = 0; i < porcentajes.size(); i++) {
             int tam = (int)(tamanioMemoria * (porcentajes.get(i) / 100.0));
             int fin = inicio + tam - 1;
-            if (fin > tamanioTotalRAM) {
+            if (fin >= tamanioTotalRAM) {
                 throw new Exception("Se sobrepasa el tamaño total de la RAM. No se pueden crear más particiones.");
             }
             particiones.add(new Particion(i, inicio, fin));
@@ -244,21 +244,25 @@ public class Controlador_MemoriaParticionada {
                     memoria.getMemoria_Principal().put(origen + j, "");
                 }
 
+                int origenMovido = particiones.get(i + 1).inicio;
                 particiones.remove(i);
                 Particion movida = particiones.get(i);
                 movida.inicio = destino;
                 movida.fin = destino + tam - 1;
                 movida.tamano = tam;
 
-                reasignacionIdsMemoriaDinamica();
-
                 int pidMovido = movida.procesoAsignado;
                 int posBCP = memoria.buscar_Posicion_BCP(pidMovido);
                 if (posBCP != -1) {
+                    int pcActual = Integer.parseInt(memoria.getMemoria_Principal().get(posBCP + 5));
+                    int mov = destino - origenMovido;
                     memoria.getMemoria_Principal().put(posBCP + 3, String.valueOf(movida.inicio));
                     memoria.getMemoria_Principal().put(posBCP + 4, String.valueOf(movida.fin));
-                    memoria.getMemoria_Principal().put(posBCP + 5, String.valueOf(movida.inicio));
+                    memoria.getMemoria_Principal().put(posBCP + 5, String.valueOf(pcActual + mov));
                 }
+
+                particiones.add(i + 1, new Particion(-1, origenMovido, origenMovido + tam - 1));
+                reasignacionIdsMemoriaDinamica();
 
             } else {
                 i++;
@@ -304,12 +308,20 @@ public class Controlador_MemoriaParticionada {
 
 
     public boolean hayParticionesDinamicasLibres(int tamanoProceso, Memoria memoria) {
-        int espacioLibre = memoria.getEspacio_Usuario() - memoria.getEspacio_Usado_Usuario();
-        if (espacioLibre >= tamanoProceso) {
-            return true;
+        for (Particion p : particiones) {
+            if (p.procesoAsignado == -1 && p.tamano >= tamanoProceso) {
+                return true;
+            }
         }
-        return false;
-    }    
+        int espacioLibre;
+        if (particiones.isEmpty()) {
+            espacioLibre = memoria.getEspacio_Usuario();
+        } else {
+            int ultimoFin = particiones.get(particiones.size() - 1).fin;
+            espacioLibre = (memoria.getEspacio_Total() - 1) - ultimoFin;
+        }
+        return espacioLibre >= tamanoProceso;
+    }
 
 
     public boolean hayParticionesEstaticasDinamicasLibres(int tamanoProceso) {
