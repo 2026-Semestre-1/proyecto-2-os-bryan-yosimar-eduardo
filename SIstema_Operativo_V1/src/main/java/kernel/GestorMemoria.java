@@ -24,6 +24,7 @@ public class GestorMemoria {
     private MemoriaPaginada memoriaPaginada;
     private String tipoGestionMemoria; 
     private Controlador_MemoriaParticionada controlador_MemoriaParticionada;
+    private ControladorMemoriaBuddy controladorBuddy;
     private Map<Integer, BCP> bcpCache = new HashMap<>();
     private int ultimaPosMV = 0;
 
@@ -61,6 +62,14 @@ public class GestorMemoria {
         this.controlador_MemoriaParticionada =  pControlador_MemoriaParticionada;
         this.tipoGestionMemoria = pTipoGestionMemoria;        
         }
+
+    public void setControladorBuddy(ControladorMemoriaBuddy controladorBuddy) {
+        this.controladorBuddy = controladorBuddy;
+    }
+
+    public ControladorMemoriaBuddy getControladorBuddy() {
+        return this.controladorBuddy;
+    }
 
     public void set_Memoria(Memoria pMemoria) {
         this.Memoria_RAM = pMemoria;
@@ -160,6 +169,12 @@ public class GestorMemoria {
                 }
                 break;
 
+            case "Buddy":
+                if (controladorBuddy != null) {
+                    controladorBuddy.asignarProceso(codigoASM, pID, nombreProceso, Memoria_RAM);
+                }
+                break;
+
         }
         return 0;
 
@@ -234,6 +249,16 @@ public class GestorMemoria {
                         }
                     }
                     liberar_Memoria_BCP(posBCP4);
+                }
+                break;
+
+            case "Buddy":
+                if (controladorBuddy != null) {
+                    controladorBuddy.liberarProceso(pPID, Memoria_RAM);
+                }
+                int posBCP5 = this.Memoria_RAM.buscar_Posicion_BCP(pPID);
+                if (posBCP5 != -1) {
+                    liberar_Memoria_BCP(posBCP5);
                 }
                 break;
         }
@@ -320,7 +345,12 @@ public class GestorMemoria {
                     return 2;
                 }
                 return 0;
-            
+
+            case "Buddy":
+                if (controladorBuddy != null && controladorBuddy.hayEspacioLibre(tamano)) {
+                    return 1;
+                }
+                return 0;
 
         }
         return 0;
@@ -348,6 +378,7 @@ public class GestorMemoria {
                         String ins = codigo.getInstrucciones().get(j).getInstruccion_Completa_Original();
                         this.Disco.getMemoria_Secundaria().put(this.ultimaPosMV + (j - tamanoParticion), ins);
                     }
+                    this.Disco.setPosicion_Memoria_Virtual(this.Disco.getPosicion_Memoria_Virtual() + tamanoParticion);
                 }
                 return CantidadOverlays;
             }
@@ -605,6 +636,9 @@ public class GestorMemoria {
                 int posReal = pPosicion - tamTotalRAM;
                 return this.Disco.optener_Instruccion(posReal);
 
+            case("Buddy"):
+                return Memoria_RAM.getMemoria_Principal().get(pPosicion);
+
         }
 
         return null;
@@ -613,11 +647,25 @@ public class GestorMemoria {
 
 
     public int getInicioParticionProceso(int pid) {
-        return controlador_MemoriaParticionada.getInicioParticionPorProceso(pid);
+        int inicio = -1;
+        if (controlador_MemoriaParticionada != null) {
+            inicio = controlador_MemoriaParticionada.getInicioParticionPorProceso(pid);
+        }
+        if (inicio == -1 && controladorBuddy != null) {
+            inicio = controladorBuddy.getInicioParticionPorProceso(pid);
+        }
+        return inicio;
     }
 
     public int getTamanoParticionProceso(int pid) {
-        return controlador_MemoriaParticionada.getTamanoParticionPorProceso(pid);
+        int tamano = -1;
+        if (controlador_MemoriaParticionada != null) {
+            tamano = controlador_MemoriaParticionada.getTamanoParticionPorProceso(pid);
+        }
+        if (tamano == -1 && controladorBuddy != null) {
+            tamano = controladorBuddy.getTamanoParticionPorProceso(pid);
+        }
+        return tamano;
     }
 
     private int encontrarMemInit(int posicion) {

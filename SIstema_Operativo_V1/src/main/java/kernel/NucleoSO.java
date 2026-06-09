@@ -33,6 +33,7 @@ public class NucleoSO {
     private boolean programa_Iniciado = false;
     private boolean hay_interrupcion = false;
     private Controlador_MemoriaParticionada controlador_MemoriaParticionada;
+    private ControladorMemoriaBuddy controladorBuddy;
 
     public NucleoSO() {
         inicializarPlanificador();
@@ -164,11 +165,31 @@ public class NucleoSO {
                     return;
                 }
                 crear_almacenamiento(config4.getAlmacenamiento(), config4.getMemoria_Virtual(), 20);
-                crear_memoriaDinamica(config4.getMemoria()); // ← solo crea RAM vacía
+                crear_memoriaDinamica(config4.getMemoria());
                 this.controlador_Memoria = new GestorMemoria(memoria, almacenamiento,
                         controlador_MemoriaParticionada, "Dinamica");
                 this.planificador.setControlador_Memoria(controlador_Memoria);
                 crear_CPU(config4.getCant_CPU());
+                break;
+
+            case "Buddy":
+                this.memoriaPaginada = null;
+                Configuracion config5 = GestorArchivos.cargarConfiguracion();
+                if (config5 == null) {
+                    System.out.println("Error: No se pudo cargar la configuracion.");
+                    return;
+                }
+                crear_almacenamiento(config5.getAlmacenamiento(), config5.getMemoria_Virtual(), 20);
+                this.memoria = new Memoria(config5.getMemoria());
+                this.memoria.soloKernel();
+                this.controlador_Memoria = new GestorMemoria(memoria, almacenamiento,
+                        controlador_MemoriaParticionada, "Buddy");
+                controladorBuddy = new ControladorMemoriaBuddy();
+                controladorBuddy.inicializar(memoria.getPosicion_Actual_Usuario(),
+                        memoria.getEspacio_Usuario(), config5.getMemoria());
+                this.controlador_Memoria.setControladorBuddy(controladorBuddy);
+                this.planificador.setControlador_Memoria(controlador_Memoria);
+                crear_CPU(config5.getCant_CPU());
                 break;
 
         }
@@ -740,6 +761,7 @@ public class NucleoSO {
         this.cpus.clear();
         this.controlador_Memoria = null;
         this.planificador = null;
+        this.controladorBuddy = null;
         // this.contador_ciclos = 0;
         this.programa_Iniciado = false;
     }
@@ -749,6 +771,7 @@ public class NucleoSO {
         this.cpus.clear();
         this.almacenamiento = null;
         this.controlador_Memoria = null;
+        this.controladorBuddy = null;
         this.planificador = null;
         this.contador_ciclos = 0;
         this.programa_Iniciado = false;
@@ -765,9 +788,12 @@ public class NucleoSO {
 
     public SnapshotSistema tomarSnapshot() {
         MemoriaPaginada mp = (controlador_Memoria != null) ? controlador_Memoria.getMemoriaPaginada() : null;
-        List<Particion> particiones = (controlador_MemoriaParticionada != null)
-                ? controlador_MemoriaParticionada.getParticiones()
-                : null;
+        List<Particion> particiones = null;
+        if (controladorBuddy != null) {
+            particiones = controladorBuddy.getParticiones();
+        } else if (controlador_MemoriaParticionada != null) {
+            particiones = controlador_MemoriaParticionada.getParticiones();
+        }
         List<BCP> todosLosBCP = (planificador != null)
                 ? new java.util.ArrayList<>(planificador.getCola_Procesos_Nuevos().values())
                 : new java.util.ArrayList<>();
