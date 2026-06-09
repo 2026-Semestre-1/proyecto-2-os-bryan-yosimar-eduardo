@@ -279,6 +279,7 @@ public class Ventana_Principal extends javax.swing.JFrame {
                         if (seleccion != null && !seleccion.equals(modeloGestionMemoria)) {
                                 modeloGestionMemoria = seleccion;
                                 nucleo.configurarMemoria(modeloGestionMemoria);
+                                nucleo.configurarAlgoritmoPlanificacion((String) Selector_Algoritmo.getSelectedItem());
                                 iniciar_Contenido_Base_tablas();
                                 inicializar_BCP_Tabs();
                                 actualizar_Tablas();
