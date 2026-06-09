@@ -272,13 +272,14 @@ public class Ventana_Principal extends javax.swing.JFrame {
                 Selector_Memoria_Label.setText("Gestion de memoria:");
 
                 Selector_Memoria = new JComboBox<>(new String[] { "Normal", "Paginacion", "ParticionIgual",
-                                "ParticionIgualDinamica", "Dinamica" });
+                                "ParticionIgualDinamica", "Dinamica", "Buddy" });
                 Selector_Memoria.setSelectedItem(modeloGestionMemoria);
                 Selector_Memoria.addActionListener(evt -> {
                         String seleccion = (String) Selector_Memoria.getSelectedItem();
                         if (seleccion != null && !seleccion.equals(modeloGestionMemoria)) {
                                 modeloGestionMemoria = seleccion;
                                 nucleo.configurarMemoria(modeloGestionMemoria);
+                                nucleo.configurarAlgoritmoPlanificacion((String) Selector_Algoritmo.getSelectedItem());
                                 iniciar_Contenido_Base_tablas();
                                 inicializar_BCP_Tabs();
                                 actualizar_Tablas();
