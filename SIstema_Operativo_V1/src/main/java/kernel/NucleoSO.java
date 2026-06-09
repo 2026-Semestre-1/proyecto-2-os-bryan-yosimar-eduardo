@@ -33,7 +33,6 @@ public class NucleoSO {
     private boolean programa_Iniciado = false;
     private boolean hay_interrupcion = false;
     private Controlador_MemoriaParticionada controlador_MemoriaParticionada;
-    private ControladorMemoriaBuddy controladorBuddy;
 
     public NucleoSO() {
         inicializarPlanificador();
@@ -165,31 +164,11 @@ public class NucleoSO {
                     return;
                 }
                 crear_almacenamiento(config4.getAlmacenamiento(), config4.getMemoria_Virtual(), 20);
-                crear_memoriaDinamica(config4.getMemoria());
+                crear_memoriaDinamica(config4.getMemoria()); // ← solo crea RAM vacía
                 this.controlador_Memoria = new GestorMemoria(memoria, almacenamiento,
                         controlador_MemoriaParticionada, "Dinamica");
                 this.planificador.setControlador_Memoria(controlador_Memoria);
                 crear_CPU(config4.getCant_CPU());
-                break;
-
-            case "Buddy":
-                this.memoriaPaginada = null;
-                Configuracion config5 = GestorArchivos.cargarConfiguracion();
-                if (config5 == null) {
-                    System.out.println("Error: No se pudo cargar la configuracion.");
-                    return;
-                }
-                crear_almacenamiento(config5.getAlmacenamiento(), config5.getMemoria_Virtual(), 20);
-                this.memoria = new Memoria(config5.getMemoria());
-                this.memoria.soloKernel();
-                this.controlador_Memoria = new GestorMemoria(memoria, almacenamiento,
-                        controlador_MemoriaParticionada, "Buddy");
-                controladorBuddy = new ControladorMemoriaBuddy();
-                controladorBuddy.inicializar(memoria.getPosicion_Actual_Usuario(),
-                        memoria.getEspacio_Usuario(), config5.getMemoria());
-                this.controlador_Memoria.setControladorBuddy(controladorBuddy);
-                this.planificador.setControlador_Memoria(controlador_Memoria);
-                crear_CPU(config5.getCant_CPU());
                 break;
 
         }
@@ -292,7 +271,7 @@ public class NucleoSO {
 
     private CPU obtenerCpuLibre() {
         for (CPU cpu : this.cpus) {
-            if (cpu.getPID_Proceso_Actual() <= 0) {
+            if (cpu.getPID_Proceso_Actual() == 0) {
                 return cpu;
             }
         }
@@ -364,23 +343,12 @@ public class NucleoSO {
             return 0;
         }
         // this.planificador.cambiar_Estado_Proceso_Nuevo();
-        // if (!programa_Iniciado) {
+        if (!programa_Iniciado) {
 
-        // // Aqui se esta asignando solo cuando se empieza el programa
-        // int inicio = this.planificador.seleccionarSiguiente();
-        // if (inicio != -1) {
-        // iniciar_Despachador(inicio);
-        // programa_Iniciado = true;
-        // }
-        // }
-        CPU cpu_libre = obtenerCpuLibre();
-        if (cpu_libre != null) {
-            int pid = this.planificador.seleccionarSiguiente();
-            if (pid != -1) {
-                System.out.println("-> Kernel: Asignando CPU " + cpu_libre.getNumero_CPU() + " al proceso " + pid);
-
-                iniciar_Despachador(pid, cpu_libre); // versión sobrecargada que recibe CPU destino
-
+            // Aqui se esta asignando solo cuando se empieza el programa
+            int inicio = this.planificador.seleccionarSiguiente();
+            if (inicio != -1) {
+                iniciar_Despachador(inicio);
                 programa_Iniciado = true;
             }
         }
@@ -401,19 +369,20 @@ public class NucleoSO {
         return this.memoria.asignar_memoria_a_programa(pCodigo);
     }
 
-    public void iniciar_Despachador(int pPID, CPU pCPU) {
-        // CPU cpu = obtenerCpuLibre();
-        // if (cpu == null) {
-        // cpu = this.cpus.get(0);
-        // }
-        Despachador.despachador(pCPU, this.memoria, pPID);
+    public void iniciar_Despachador(int pPID) {
+        CPU cpu = obtenerCpuLibre();
+        if (cpu == null) {
+            cpu = this.cpus.get(0);
+        }
+        Despachador.despachador(cpu, this.memoria, pPID);
         this.memoria.actualizar_Estado_BCP(pPID, "En Ejecucion");
-        pCPU.setPID_Proceso_Actual(pPID);
+        this.memoria.modificar_CPU_Asignada(pPID, cpu.getNumero_CPU());
+        cpu.setPID_Proceso_Actual(pPID);
         sincronizar_Datos_Memoria_BCP_Planificador(pPID);
     }
 
     public boolean comprobar_Finalizacion_Proceso_CPU(CPU pCpu) {
-        if (pCpu == null)
+        if (pCpu.equals(null))
             return false;
 
         int PID_actual = pCpu.getPID_Proceso_Actual();
@@ -483,21 +452,21 @@ public class NucleoSO {
             return 1;
 
         int tiempo_actual = cpu.getTiempo_CPU();
-        this.memoria.actualizar_Estado_BCP(pPID_Actual, "Terminado");
+        this.memoria.actualizar_Estado_BCP(pPID_Actual, "Listo");
         cpu.modificar_PC(-1);
         this.sincronizar_Datos_CPU_Memoria_BCP(cpu);
         this.planificador.finalizacion_Procesos(memoria, pPID_Actual, tiempo_actual);
 
         this.planificador.cargarLote(memoria, almacenamiento, tiempo_actual);
 
-        this.planificador.cambiar_Estado_Proceso_Nuevo();
+        // this.planificador.cambiar_Estado_Proceso_Nuevo();
         cpu.reiniciar_Datos_CPU();
 
         if (this.planificador.hay_Procesos_Nuevos()) {
             System.out.println("--> Controlador Principal: Hay procesos nuevos");
             int PID_siguiente = this.planificador.seleccionarSiguiente();
             if (PID_siguiente != -1) {
-                iniciar_Despachador(PID_siguiente, cpu);
+                iniciar_Despachador(PID_siguiente);
                 this.programa_Iniciado = true;
                 return 0;
             } else {
@@ -506,10 +475,6 @@ public class NucleoSO {
             }
         } else {
             this.programa_Iniciado = false;
-
-            // Vaciar los datos de ese CPU.
-            cpu.setPID_Proceso_Actual(0);
-
             return 1;
         }
     }
@@ -532,7 +497,7 @@ public class NucleoSO {
     }
 
     public List<String> paso_a_paso() {
-        if (this.cpus.isEmpty()) {
+        if (!this.programa_Iniciado || this.cpus.isEmpty()) {
             return null;
         }
 
@@ -552,15 +517,13 @@ public class NucleoSO {
                     if (bcp != null && bcp.isTieneOverlay() && bcp.getOverlayActual() < bcp.getTotalOverlays()) {
                         int particionInicio = controlador_MemoriaParticionada.getInicioParticionPorProceso(pid);
                         int particionFin = particionInicio;
-                        boolean encontrada = false;
                         for (Particion p : controlador_MemoriaParticionada.getParticiones()) {
                             if (p.procesoAsignado == pid) {
                                 particionFin = p.fin;
-                                encontrada = true;
                                 break;
                             }
                         }
-                        if (encontrada && pc > particionFin) {
+                        if (pc > particionFin) {
                             this.controlador_Memoria.swapOverlay(bcp);
                             cpu.setPC(particionInicio);
                         }
@@ -570,7 +533,6 @@ public class NucleoSO {
                     cpu.reiniciar_Interrupciones();
                     cpu.ejecutar_Siguiente_Instruccion();
                     this.sincronizar_Datos_CPU_Memoria_BCP(cpu);
-                    sincronizar_Datos_Memoria_BCP_Planificador(pid);
 
                     // Modificar los tiempos de espera de los procesos cuyo estado sea listo.
                     this.memoria.modificar_Tiempo_Espera_Procesos_Listos(this.planificador.getCola_Procesos_Nuevos());
@@ -593,21 +555,6 @@ public class NucleoSO {
         switch (nombreAlgoritmo) {
 
             case "SRT":
-                for (CPU cpu : this.cpus) {
-                    int actualPid = cpu.getPID_Proceso_Actual();
-                    int candidato = planificador.seleccionarSiguiente();
-                    // Se debe poner el estado del PID actual de este CPU en "Listo", para que se
-                    // puede calcular con ese tambien.
-                    this.memoria.actualizar_Estado_BCP(actualPid, "Listo");
-                    sincronizar_Datos_Memoria_BCP_Planificador(actualPid);
-                    if (candidato != -1 && candidato != actualPid) {
-                        Despachador.despachador(cpu, memoria, candidato);
-                        memoria.actualizar_Estado_BCP(candidato, "En Ejecuccion");
-                        sincronizar_Datos_Memoria_BCP_Planificador(candidato);
-                    }
-                }
-                break;
-
             case "RR": {
                 int candidato = planificador.seleccionarSiguiente();
                 if (candidato == -1)
@@ -632,10 +579,7 @@ public class NucleoSO {
                     BCP bcp = this.memoria.obtener_Datos_BCP(pid);
                     if (bcp != null) {
                         int r = 0;
-                        try {
-                            r = Integer.parseInt(bcp.getRafaga_Restante());
-                        } catch (NumberFormatException e) {
-                        }
+                        try { r = Integer.parseInt(bcp.getRafaga_Restante()); } catch (NumberFormatException e) {}
                         if (r > peorRafaga) {
                             peorRafaga = r;
                             cpuObjetivo = cpu;
@@ -657,10 +601,17 @@ public class NucleoSO {
             case "FCFS":
             case "SJF":
             case "HRRN":
-            case "Lottery":
-                // No preemptivos: solo cambiar cuando el proceso termina
-                // Ya manejado en finalizacion_Proceso_FCFS()
+            case "Lottery": {
+                for (CPU cpu : this.cpus) {
+                    if (cpu.getPID_Proceso_Actual() != 0)
+                        continue;
+                    int candidato = planificador.seleccionarSiguiente();
+                    if (candidato == -1)
+                        break;
+                    iniciar_Despachador(candidato);
+                }
                 break;
+            }
 
             default:
                 break;
@@ -761,7 +712,6 @@ public class NucleoSO {
         this.cpus.clear();
         this.controlador_Memoria = null;
         this.planificador = null;
-        this.controladorBuddy = null;
         // this.contador_ciclos = 0;
         this.programa_Iniciado = false;
     }
@@ -771,7 +721,6 @@ public class NucleoSO {
         this.cpus.clear();
         this.almacenamiento = null;
         this.controlador_Memoria = null;
-        this.controladorBuddy = null;
         this.planificador = null;
         this.contador_ciclos = 0;
         this.programa_Iniciado = false;
@@ -788,12 +737,9 @@ public class NucleoSO {
 
     public SnapshotSistema tomarSnapshot() {
         MemoriaPaginada mp = (controlador_Memoria != null) ? controlador_Memoria.getMemoriaPaginada() : null;
-        List<Particion> particiones = null;
-        if (controladorBuddy != null) {
-            particiones = controladorBuddy.getParticiones();
-        } else if (controlador_MemoriaParticionada != null) {
-            particiones = controlador_MemoriaParticionada.getParticiones();
-        }
+        List<Particion> particiones = (controlador_MemoriaParticionada != null)
+                ? controlador_MemoriaParticionada.getParticiones()
+                : null;
         List<BCP> todosLosBCP = (planificador != null)
                 ? new java.util.ArrayList<>(planificador.getCola_Procesos_Nuevos().values())
                 : new java.util.ArrayList<>();
