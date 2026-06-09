@@ -342,7 +342,7 @@ public class NucleoSO {
             this.planificador.agregar_Programa_Pendiente(nombreArchivo);
             return 0;
         }
-        // this.planificador.cambiar_Estado_Proceso_Nuevo();
+        this.planificador.cambiar_Estado_Proceso_Nuevo();
         if (!programa_Iniciado) {
 
             // Aqui se esta asignando solo cuando se empieza el programa
@@ -380,7 +380,7 @@ public class NucleoSO {
     }
 
     public boolean comprobar_Finalizacion_Proceso_CPU(CPU pCpu) {
-        if (pCpu.equals(null))
+        if (pCpu == null)
             return false;
 
         int PID_actual = pCpu.getPID_Proceso_Actual();
@@ -457,7 +457,7 @@ public class NucleoSO {
 
         this.planificador.cargarLote(memoria, almacenamiento, tiempo_actual);
 
-        // this.planificador.cambiar_Estado_Proceso_Nuevo();
+        this.planificador.cambiar_Estado_Proceso_Nuevo();
         cpu.reiniciar_Datos_CPU();
 
         if (this.planificador.hay_Procesos_Nuevos()) {
@@ -515,13 +515,15 @@ public class NucleoSO {
                     if (bcp != null && bcp.isTieneOverlay() && bcp.getOverlayActual() < bcp.getTotalOverlays()) {
                         int particionInicio = controlador_MemoriaParticionada.getInicioParticionPorProceso(pid);
                         int particionFin = particionInicio;
+                        boolean encontrada = false;
                         for (Particion p : controlador_MemoriaParticionada.getParticiones()) {
                             if (p.procesoAsignado == pid) {
                                 particionFin = p.fin;
+                                encontrada = true;
                                 break;
                             }
                         }
-                        if (pc > particionFin) {
+                        if (encontrada && pc > particionFin) {
                             this.controlador_Memoria.swapOverlay(bcp);
                             cpu.setPC(particionInicio);
                         }

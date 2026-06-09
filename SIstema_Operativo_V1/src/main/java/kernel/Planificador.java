@@ -334,11 +334,26 @@ public class Planificador {
                     tiempoActualCPU, tiempo_Estimado, pos_MV, pcInicial, pid_Real);
 
         } else if ("Dinamica".equals(controlador.getTipoGestionMemoria())) {
-            controlador.asignar_Memoria_Programa(codigo, nombrePrograma, pid);
-            pcInicial = controlador.getInicioParticionProceso(pid);
-
+            int resultado = controlador.asignar_Memoria_Programa(codigo, nombrePrograma, pid);
+            if (resultado == 1) {
+                pcInicial = memoria.getEspacio_Total() + pos_MV;
+            } else {
+                pcInicial = controlador.getInicioParticionProceso(pid);
+            }
+            if (pcInicial == -1) {
+                System.out.println("Planificador: No hay memoria disponible para " + nombrePrograma);
+                this.eliminar_Programa_Pendiente(nombrePrograma);
+                return false;
+            }
             memoria.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1,
                     tiempoActualCPU, tiempo_Estimado, pos_MV, pcInicial, pid_Real);
+            int posBCP = memoria.buscar_Posicion_BCP(pid);
+            if (posBCP != -1) {
+                memoria.getMemoria_Principal().put(posBCP + 3, String.valueOf(pcInicial));
+                memoria.getMemoria_Principal().put(posBCP + 4,
+                        String.valueOf(pcInicial + espacio_Necesario_Programa - 1));
+                memoria.getMemoria_Principal().put(posBCP + 5, String.valueOf(pcInicial));
+            }
         }
 
         else {
@@ -363,6 +378,7 @@ public class Planificador {
         nuevo_BCP.setNombre_Programa(nombrePrograma);
         nuevo_BCP.set_momento_creacion(LocalTime.now());
         controlador.guardarBCP(nuevo_BCP);
+        System.out.println("Planificador: PASS 6");
         this.agregar_Proceso_Nuevo(pid, nuevo_BCP);
         System.out.println("Planificador: PASS 7");
         this.eliminar_Programa_Pendiente(nombrePrograma);
