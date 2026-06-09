@@ -42,13 +42,24 @@ public class MonitorGrafico extends JPanel {
         scrollPane.setPreferredSize(new Dimension(600, 200));
         add(scrollPane, BorderLayout.CENTER);
 
-        JPanel legendPanel = new JPanel();
+        JPanel legendPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 12, 2));
         legendPanel.setBackground(Color.WHITE);
-        legendPanel.add(createLegendLabel(new Color(76, 175, 80), "Ejecucion"));
-        legendPanel.add(createLegendLabel(new Color(33, 150, 243), "Preparado"));
-        legendPanel.add(createLegendLabel(new Color(255, 152, 0), "Nuevo"));
-        legendPanel.add(createLegendLabel(new Color(158, 158, 158), "Terminado"));
+        legendPanel.add(createLegendLabel(getCpuColor(1), "CPU 1"));
+        legendPanel.add(createLegendLabel(getCpuColor(2), "CPU 2"));
+        legendPanel.add(createLegendLabel(getCpuColor(3), "CPU 3"));
+        legendPanel.add(createLegendLabel(getCpuColor(4), "CPU 4"));
+        legendPanel.add(createLegendLabel(new Color(245, 245, 245), "Libre"));
         add(legendPanel, BorderLayout.SOUTH);
+    }
+
+    private static Color getCpuColor(int cpuNum) {
+        switch (cpuNum) {
+            case 1: return new Color(255, 193, 7);
+            case 2: return new Color(33, 150, 243);
+            case 3: return new Color(244, 67, 54);
+            case 4: return new Color(156, 39, 176);
+            default: return Color.LIGHT_GRAY;
+        }
     }
 
     private JPanel createLegendLabel(Color color, String text) {
@@ -85,11 +96,7 @@ public class MonitorGrafico extends JPanel {
             if (value instanceof GanttCell) {
                 GanttCell cell = (GanttCell) value;
                 setText("");
-                if (cell.executed) {
-                    setBackground(cell.color);
-                } else {
-                    setBackground(new Color(230, 230, 230));
-                }
+                setBackground(cell.color);
             } else {
                 setBackground(Color.WHITE);
                 setForeground(Color.BLACK);
@@ -100,12 +107,8 @@ public class MonitorGrafico extends JPanel {
     }
 
     private static class GanttCell {
-        final boolean executed;
         final Color color;
-        GanttCell(boolean executed, Color color) {
-            this.executed = executed;
-            this.color = color;
-        }
+        GanttCell(Color color) { this.color = color; }
     }
 
     private static class GanttTableModel extends AbstractTableModel {
@@ -134,38 +137,52 @@ public class MonitorGrafico extends JPanel {
                 }
             }
 
+            List<RowData> tempRows = new ArrayList<>();
             int accumTime = 0;
 
             for (BCP bcp : snap.todosLosBCP) {
-                String nombre = bcp.getNombre_Programa();
                 int pid = bcp.getPID();
                 int tiempoEje;
                 try { tiempoEje = Integer.parseInt(bcp.getTiempo_Ejecucion()); } catch (NumberFormatException e) { tiempoEje = 0; }
                 int rafaga;
                 try { rafaga = Integer.parseInt(bcp.getRafaga_Restante()); } catch (NumberFormatException e) { rafaga = tiempoEje; }
-                String estado = bcp.getEstado();
                 Integer cpuNum = pidToCpu.get(pid);
-                String nucleo = (cpuNum != null && "En Ejecucion".equals(estado)) ? String.valueOf(cpuNum) : "-";
+                if (cpuNum == null && bcp.getCPU_Asignada() != null && !bcp.getCPU_Asignada().isEmpty()
+                        && !"NONE".equals(bcp.getCPU_Asignada())) {
+                    try { cpuNum = Integer.parseInt(bcp.getCPU_Asignada()); } catch (NumberFormatException ignored) {}
+                }
+                if (cpuNum == null) cpuNum = 0;
+                String nucleo = cpuNum != 0 ? String.valueOf(cpuNum) : "-";
                 int ejecutados = tiempoEje - rafaga;
                 if (ejecutados < 0) ejecutados = 0;
-                rows.add(new RowData(nucleo, nombre + " (" + pid + ")", ejecutados, tiempoEje, accumTime, estado));
+                tempRows.add(new RowData(nucleo, bcp.getNombre_Programa() + " (" + pid + ")",
+                        ejecutados, tiempoEje, accumTime, cpuNum));
                 accumTime += tiempoEje;
             }
 
             for (String nombre : snap.pendientes) {
-                rows.add(new RowData("-", nombre + " (pendiente)", 0, 0, accumTime, "Nuevo"));
+                tempRows.add(new RowData("-", nombre + " (pendiente)", 0, 0, accumTime, 0));
             }
 
             if (snap.procesosTerminados != null) {
                 for (BCP bcp : snap.procesosTerminados) {
-                    String nombre = bcp.getNombre_Programa();
                     int pid = bcp.getPID();
                     int tiempoEjeT;
                     try { tiempoEjeT = Integer.parseInt(bcp.getTiempo_Ejecucion()); } catch (NumberFormatException e) { tiempoEjeT = 0; }
-                    String estado = bcp.getEstado();
-                    rows.add(new RowData("-", nombre + " (" + pid + ")", tiempoEjeT, tiempoEjeT, accumTime, estado));
+                    int cpuNumT = 0;
+                    if (bcp.getCPU_Asignada() != null && !bcp.getCPU_Asignada().isEmpty()
+                            && !"NONE".equals(bcp.getCPU_Asignada())) {
+                        try { cpuNumT = Integer.parseInt(bcp.getCPU_Asignada()); } catch (NumberFormatException ignored) {}
+                    }
+                    tempRows.add(new RowData("-", bcp.getNombre_Programa() + " (" + pid + ")",
+                            tiempoEjeT, tiempoEjeT, accumTime, cpuNumT));
                     accumTime += tiempoEjeT;
                 }
+            }
+
+            // Reverse order: latest at top, earliest at bottom
+            for (int i = tempRows.size() - 1; i >= 0; i--) {
+                rows.add(tempRows.get(i));
             }
 
             maxTime = accumTime;
@@ -173,11 +190,8 @@ public class MonitorGrafico extends JPanel {
             fireTableStructureChanged();
         }
 
-        @Override
-        public int getRowCount() { return rows.size(); }
-
-        @Override
-        public int getColumnCount() { return columnCount; }
+        @Override public int getRowCount() { return rows.size(); }
+        @Override public int getColumnCount() { return columnCount; }
 
         @Override
         public String getColumnName(int column) {
@@ -196,21 +210,15 @@ public class MonitorGrafico extends JPanel {
             int end = start + row.duracion - 1;
 
             if (t < start || t > end || row.duracion == 0) {
-                return new GanttCell(false, Color.LIGHT_GRAY);
+                return new GanttCell(new Color(245, 245, 245));
             }
 
             int tickInProcess = t - start + 1;
             boolean executed = tickInProcess <= row.ejecutados;
-            Color color;
-            switch (row.estado) {
-                case "En Ejecucion": color = new Color(76, 175, 80); break;
-                case "Preparado":     color = new Color(33, 150, 243); break;
-                case "Terminado":
-                case "Listo":         color = new Color(158, 158, 158); break;
-                case "Nuevo":         color = new Color(255, 152, 0); break;
-                default:              color = Color.LIGHT_GRAY; break;
+            if (executed && row.cpuColorIndex > 0) {
+                return new GanttCell(getCpuColor(row.cpuColorIndex));
             }
-            return new GanttCell(executed, color);
+            return new GanttCell(new Color(220, 220, 220));
         }
     }
 
@@ -220,15 +228,15 @@ public class MonitorGrafico extends JPanel {
         final int ejecutados;
         final int duracion;
         final int startTime;
-        final String estado;
+        final int cpuColorIndex;
 
-        RowData(String nucleo, String proceso, int ejecutados, int duracion, int startTime, String estado) {
+        RowData(String nucleo, String proceso, int ejecutados, int duracion, int startTime, int cpuColorIndex) {
             this.nucleo = nucleo;
             this.proceso = proceso;
             this.ejecutados = ejecutados;
             this.duracion = duracion;
             this.startTime = startTime;
-            this.estado = estado;
+            this.cpuColorIndex = cpuColorIndex;
         }
     }
 }
