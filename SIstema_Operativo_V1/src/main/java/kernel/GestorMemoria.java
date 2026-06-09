@@ -226,9 +226,8 @@ public class GestorMemoria {
                         } else {
                             int memEnd = Integer.parseInt(this.Memoria_RAM.obtener_Instruccion(posBCP4 + 4));
                             int tamTotalRAM = this.Memoria_RAM.getEspacio_Total();
-                            int posIniMV = this.Disco.getEspacio_Indices();
-                            int posRealIni = posIniMV + (memInit - tamTotalRAM);
-                            int posRealFin = posIniMV + (memEnd - tamTotalRAM);
+                            int posRealIni = memInit - tamTotalRAM;
+                            int posRealFin = memEnd - tamTotalRAM;
                             for (int i = posRealIni; i <= posRealFin; i++) {
                                 this.Disco.getMemoria_Secundaria().put(i, "");
                             }
