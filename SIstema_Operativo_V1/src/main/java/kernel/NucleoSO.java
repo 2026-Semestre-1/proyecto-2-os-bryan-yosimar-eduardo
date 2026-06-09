@@ -343,12 +343,16 @@ public class NucleoSO {
             return 0;
         }
         // this.planificador.cambiar_Estado_Proceso_Nuevo();
-        if (!programa_Iniciado) {
+        // if (!programa_Iniciado) {
 
-            // Aqui se esta asignando solo cuando se empieza el programa
-            int inicio = this.planificador.seleccionarSiguiente();
-            if (inicio != -1) {
-                iniciar_Despachador(inicio);
+        CPU cpu_libre = obtenerCpuLibre();
+        if (cpu_libre != null) {
+            int pid = this.planificador.seleccionarSiguiente();
+            if (pid != -1) {
+                System.out.println("-> Kernel: Asignando CPU " + cpu_libre.getNumero_CPU() + " al proceso " + pid);
+
+                iniciar_Despachador(pid); // versión sobrecargada que recibe CPU destino
+
                 programa_Iniciado = true;
             }
         }

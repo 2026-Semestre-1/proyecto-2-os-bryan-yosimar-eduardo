@@ -180,10 +180,8 @@ public class MonitorGrafico extends JPanel {
                 }
             }
 
-            // Reverse order: latest at top, earliest at bottom
-            for (int i = tempRows.size() - 1; i >= 0; i--) {
-                rows.add(tempRows.get(i));
-            }
+            // Natural order: first process at top
+            rows.addAll(tempRows);
 
             maxTime = accumTime;
             columnCount = 2 + maxTime;
