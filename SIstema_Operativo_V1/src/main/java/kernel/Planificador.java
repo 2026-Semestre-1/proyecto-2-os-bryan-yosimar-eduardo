@@ -326,12 +326,43 @@ public class Planificador {
             memoria.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1,
                     tiempoActualCPU, tiempo_Estimado, pos_MV, pcInicial, pid_Real);
 
+            int posBCP = memoria.buscar_Posicion_BCP(pid);
+            if (posBCP != -1) {
+                memoria.getMemoria_Principal().put(posBCP + 3, String.valueOf(pcInicial));
+                memoria.getMemoria_Principal().put(posBCP + 4,
+                        String.valueOf(pcInicial + espacio_Necesario_Programa - 1));
+                memoria.getMemoria_Principal().put(posBCP + 5, String.valueOf(pcInicial));
+            }
+
         } else if ("ParticionIgualDinamica".equals(controlador.getTipoGestionMemoria())) {
             controlador.asignar_Memoria_Programa(codigo, nombrePrograma, pid);
             pcInicial = controlador.getInicioParticionProceso(pid);
 
             memoria.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1,
                     tiempoActualCPU, tiempo_Estimado, pos_MV, pcInicial, pid_Real);
+
+            int posBCP = memoria.buscar_Posicion_BCP(pid);
+            if (posBCP != -1) {
+                memoria.getMemoria_Principal().put(posBCP + 3, String.valueOf(pcInicial));
+                memoria.getMemoria_Principal().put(posBCP + 4,
+                        String.valueOf(pcInicial + espacio_Necesario_Programa - 1));
+                memoria.getMemoria_Principal().put(posBCP + 5, String.valueOf(pcInicial));
+            }
+
+        } else if ("Buddy".equals(controlador.getTipoGestionMemoria())) {
+            controlador.asignar_Memoria_Programa(codigo, nombrePrograma, pid);
+            pcInicial = controlador.getInicioParticionProceso(pid);
+
+            memoria.iniciar_Memoria_BCP(espacio_Necesario_Programa, 1, pid + 1, 1,
+                    tiempoActualCPU, tiempo_Estimado, pos_MV, pcInicial, pid_Real);
+
+            int posBCP = memoria.buscar_Posicion_BCP(pid);
+            if (posBCP != -1) {
+                memoria.getMemoria_Principal().put(posBCP + 3, String.valueOf(pcInicial));
+                memoria.getMemoria_Principal().put(posBCP + 4,
+                        String.valueOf(pcInicial + espacio_Necesario_Programa - 1));
+                memoria.getMemoria_Principal().put(posBCP + 5, String.valueOf(pcInicial));
+            }
 
         } else if ("Dinamica".equals(controlador.getTipoGestionMemoria())) {
             int resultado = controlador.asignar_Memoria_Programa(codigo, nombrePrograma, pid);
