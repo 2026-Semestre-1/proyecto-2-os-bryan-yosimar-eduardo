@@ -5,188 +5,229 @@ import model.BCP;
 import model.CPU;
 
 import javax.swing.JPanel;
-import java.awt.BasicStroke;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MonitorGrafico extends JPanel {
 
-    private SnapshotSistema snapshot;
-    private static final int BAR_HEIGHT = 22;
-    private static final int LABEL_WIDTH = 150;
-    private static final int PADDING = 10;
-    private static final int ROW_GAP = 4;
-    private static final int LEGEND_HEIGHT = 30;
+    private GanttTableModel tableModel;
+    private JTable table;
 
     public MonitorGrafico() {
-        setPreferredSize(new Dimension(600, 300));
+        setLayout(new BorderLayout());
         setBackground(Color.WHITE);
+        tableModel = new GanttTableModel(null);
+        table = new JTable(tableModel);
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        table.setRowHeight(24);
+        table.getTableHeader().setReorderingAllowed(false);
+        table.setDefaultRenderer(Object.class, new GanttCellRenderer());
+        table.getColumnModel().getColumn(0).setPreferredWidth(50);
+        table.getColumnModel().getColumn(1).setPreferredWidth(130);
+        for (int c = 2; c < table.getColumnCount(); c++) {
+            table.getColumnModel().getColumn(c).setPreferredWidth(30);
+        }
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setPreferredSize(new Dimension(600, 200));
+        add(scrollPane, BorderLayout.CENTER);
+
+        JPanel legendPanel = new JPanel();
+        legendPanel.setBackground(Color.WHITE);
+        legendPanel.add(createLegendLabel(new Color(76, 175, 80), "Ejecucion"));
+        legendPanel.add(createLegendLabel(new Color(33, 150, 243), "Preparado"));
+        legendPanel.add(createLegendLabel(new Color(255, 152, 0), "Nuevo"));
+        legendPanel.add(createLegendLabel(new Color(158, 158, 158), "Terminado"));
+        add(legendPanel, BorderLayout.SOUTH);
+    }
+
+    private JPanel createLegendLabel(Color color, String text) {
+        JPanel panel = new JPanel(new BorderLayout(4, 0));
+        panel.setBackground(Color.WHITE);
+        JPanel colorBox = new JPanel();
+        colorBox.setBackground(color);
+        colorBox.setPreferredSize(new Dimension(14, 14));
+        panel.add(colorBox, BorderLayout.WEST);
+        javax.swing.JLabel label = new javax.swing.JLabel(text);
+        label.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        panel.add(label, BorderLayout.CENTER);
+        return panel;
     }
 
     public void setSnapshot(SnapshotSistema snap) {
-        this.snapshot = snap;
-        repaint();
+        tableModel.setSnapshot(snap);
+        for (int c = 2; c < table.getColumnCount(); c++) {
+            if (table.getColumnModel().getColumn(c) != null) {
+                table.getColumnModel().getColumn(c).setPreferredWidth(30);
+            }
+        }
+        if (table.getColumnCount() > 0)
+            table.getColumnModel().getColumn(0).setPreferredWidth(50);
+        if (table.getColumnCount() > 1)
+            table.getColumnModel().getColumn(1).setPreferredWidth(130);
     }
 
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        Graphics2D g2 = (Graphics2D) g;
+    private static class GanttCellRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                boolean isSelected, boolean hasFocus, int row, int column) {
+            Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            if (value instanceof GanttCell) {
+                GanttCell cell = (GanttCell) value;
+                setText("");
+                if (cell.executed) {
+                    setBackground(cell.color);
+                } else {
+                    setBackground(new Color(230, 230, 230));
+                }
+            } else {
+                setBackground(Color.WHITE);
+                setForeground(Color.BLACK);
+            }
+            setBorder(javax.swing.BorderFactory.createLineBorder(new Color(210, 210, 210)));
+            return c;
+        }
+    }
 
-        int panelHeight = getHeight();
-        int panelWidth = getWidth();
+    private static class GanttCell {
+        final boolean executed;
+        final Color color;
+        GanttCell(boolean executed, Color color) {
+            this.executed = executed;
+            this.color = color;
+        }
+    }
 
-        if (snapshot == null) {
-            g2.setColor(Color.GRAY);
-            g2.drawString("Sin datos de procesos", PADDING, 30);
-            drawLegend(g2, panelWidth, panelHeight);
-            return;
+    private static class GanttTableModel extends AbstractTableModel {
+        private List<RowData> rows = new ArrayList<>();
+        private int maxTime = 0;
+        private int columnCount = 0;
+
+        GanttTableModel(SnapshotSistema snap) {
+            setSnapshot(snap);
         }
 
-        List<ProcesoBar> barras = new ArrayList<>();
+        void setSnapshot(SnapshotSistema snap) {
+            rows.clear();
+            maxTime = 1;
+            if (snap == null) {
+                columnCount = 2;
+                fireTableStructureChanged();
+                return;
+            }
 
-        java.util.Map<Integer, Integer> pidACpu = new java.util.HashMap<>();
-        if (snapshot.estadoCPUs != null) {
-            for (CPU cpu : snapshot.estadoCPUs) {
-                int pid = cpu.getPID_Proceso_Actual();
-                if (pid != 0) {
-                    pidACpu.put(pid, cpu.getNumero_CPU());
+            Map<Integer, Integer> pidToCpu = new HashMap<>();
+            if (snap.estadoCPUs != null) {
+                for (CPU cpu : snap.estadoCPUs) {
+                    int pid = cpu.getPID_Proceso_Actual();
+                    if (pid != 0) pidToCpu.put(pid, cpu.getNumero_CPU());
                 }
             }
-        }
 
-        for (BCP bcp : snapshot.todosLosBCP) {
-            String nombre = bcp.getNombre_Programa();
-            int pid = bcp.getPID();
-            int rafagaRestante;
-            try { rafagaRestante = Integer.parseInt(bcp.getRafaga_Restante()); } catch (NumberFormatException e) { rafagaRestante = 0; }
-            int duracion;
-            try { duracion = Integer.parseInt(bcp.getTiempo_Ejecucion()); } catch (NumberFormatException e) { duracion = 0; }
-            String estado = bcp.getEstado();
-            Integer cpuNum = pidACpu.get(pid);
-            String label = nombre + " (" + pid + ")";
-            if (cpuNum != null && "En Ejecucion".equals(estado)) {
-                label += " [CPU " + cpuNum + "]";
-            }
-            barras.add(new ProcesoBar(label, rafagaRestante, duracion, estado));
-        }
+            int accumTime = 0;
 
-        for (String p : snapshot.pendientes) {
-            barras.add(new ProcesoBar(p + " (pendiente)", 0, 0, "Nuevo"));
-        }
-
-        if (!barras.isEmpty()) {
-
-            int maxDuracion = 1;
-            for (ProcesoBar b : barras) {
-                if (b.duracion > maxDuracion) maxDuracion = b.duracion;
+            for (BCP bcp : snap.todosLosBCP) {
+                String nombre = bcp.getNombre_Programa();
+                int pid = bcp.getPID();
+                int tiempoEje;
+                try { tiempoEje = Integer.parseInt(bcp.getTiempo_Ejecucion()); } catch (NumberFormatException e) { tiempoEje = 0; }
+                int rafaga;
+                try { rafaga = Integer.parseInt(bcp.getRafaga_Restante()); } catch (NumberFormatException e) { rafaga = tiempoEje; }
+                String estado = bcp.getEstado();
+                Integer cpuNum = pidToCpu.get(pid);
+                String nucleo = (cpuNum != null && "En Ejecucion".equals(estado)) ? String.valueOf(cpuNum) : "-";
+                int ejecutados = tiempoEje - rafaga;
+                if (ejecutados < 0) ejecutados = 0;
+                rows.add(new RowData(nucleo, nombre + " (" + pid + ")", ejecutados, tiempoEje, accumTime, estado));
+                accumTime += tiempoEje;
             }
 
-            int chartWidth = panelWidth - LABEL_WIDTH - PADDING * 2;
-            int chartHeight = panelHeight - LEGEND_HEIGHT - PADDING * 2;
-            int startY = PADDING + 5;
+            for (String nombre : snap.pendientes) {
+                rows.add(new RowData("-", nombre + " (pendiente)", 0, 0, accumTime, "Nuevo"));
+            }
 
-            int availableRows = Math.max(1, chartHeight / (BAR_HEIGHT + ROW_GAP));
-            int shownRows = Math.min(availableRows, barras.size());
-
-            for (int i = 0; i < shownRows; i++) {
-                ProcesoBar bar = barras.get(i);
-                int y = startY + i * (BAR_HEIGHT + ROW_GAP);
-
-                g2.setColor(Color.BLACK);
-                g2.setFont(new Font("Monospaced", Font.PLAIN, 11));
-                String label = truncate(bar.nombre, LABEL_WIDTH / 7);
-                g2.drawString(label, PADDING, y + BAR_HEIGHT - 6);
-
-                int barX = LABEL_WIDTH + PADDING;
-                int barW = maxDuracion > 0 ? (int) ((double) bar.rafaga / maxDuracion * chartWidth) : 0;
-                if (barW < 1 && bar.rafaga > 0) barW = 1;
-
-                Color color;
-                switch (bar.estado) {
-                    case "En Ejecucion": color = new Color(76, 175, 80); break;
-                    case "Preparado":     color = new Color(33, 150, 243); break;
-                    case "Terminado":
-                    case "Listo":         color = new Color(158, 158, 158); break;
-                    case "Nuevo":         color = new Color(255, 152, 0); break;
-                    default:              color = Color.LIGHT_GRAY; break;
+            if (snap.procesosTerminados != null) {
+                for (BCP bcp : snap.procesosTerminados) {
+                    String nombre = bcp.getNombre_Programa();
+                    int pid = bcp.getPID();
+                    int tiempoEjeT;
+                    try { tiempoEjeT = Integer.parseInt(bcp.getTiempo_Ejecucion()); } catch (NumberFormatException e) { tiempoEjeT = 0; }
+                    String estado = bcp.getEstado();
+                    rows.add(new RowData("-", nombre + " (" + pid + ")", tiempoEjeT, tiempoEjeT, accumTime, estado));
+                    accumTime += tiempoEjeT;
                 }
-
-                g2.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 200));
-                g2.fillRect(barX, y, barW, BAR_HEIGHT);
-
-                g2.setColor(Color.DARK_GRAY);
-                g2.drawRect(barX, y, barW, BAR_HEIGHT);
-
-                g2.setFont(new Font("Monospaced", Font.BOLD, 10));
-                g2.setColor(Color.BLACK);
-                String info = bar.rafaga + "/" + bar.duracion + " " + bar.estado;
-                g2.drawString(info, barX + 4, y + BAR_HEIGHT - 6);
             }
 
-            if (shownRows < barras.size()) {
-                g2.setColor(Color.GRAY);
-                g2.drawString("... +" + (barras.size() - shownRows) + " mas",
-                        PADDING, startY + shownRows * (BAR_HEIGHT + ROW_GAP) + BAR_HEIGHT - 6);
-            }
-
-            g2.setStroke(new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{4}, 0));
-            g2.setColor(Color.LIGHT_GRAY);
-            int gridX = LABEL_WIDTH + PADDING;
-            for (int t = 0; t <= maxDuracion; t += Math.max(1, maxDuracion / 10)) {
-                int x = gridX + (int) ((double) t / maxDuracion * chartWidth);
-                g2.drawLine(x, startY, x, startY + shownRows * (BAR_HEIGHT + ROW_GAP) - ROW_GAP);
-                g2.setStroke(new BasicStroke(1));
-                g2.setFont(new Font("Monospaced", Font.PLAIN, 9));
-                g2.drawString(String.valueOf(t), x - 6, startY - 2);
-                g2.setStroke(new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{4}, 0));
-            }
+            maxTime = accumTime;
+            columnCount = 2 + maxTime;
+            fireTableStructureChanged();
         }
 
-        drawLegend(g2, panelWidth, panelHeight);
+        @Override
+        public int getRowCount() { return rows.size(); }
+
+        @Override
+        public int getColumnCount() { return columnCount; }
+
+        @Override
+        public String getColumnName(int column) {
+            if (column == 0) return "Nucleo";
+            if (column == 1) return "Proceso";
+            return String.valueOf(column - 1);
+        }
+
+        @Override
+        public Object getValueAt(int rowIndex, int columnIndex) {
+            RowData row = rows.get(rowIndex);
+            if (columnIndex == 0) return row.nucleo;
+            if (columnIndex == 1) return row.proceso;
+            int t = columnIndex - 1;
+            int start = row.startTime + 1;
+            int end = start + row.duracion - 1;
+
+            if (t < start || t > end || row.duracion == 0) {
+                return new GanttCell(false, Color.LIGHT_GRAY);
+            }
+
+            int tickInProcess = t - start + 1;
+            boolean executed = tickInProcess <= row.ejecutados;
+            Color color;
+            switch (row.estado) {
+                case "En Ejecucion": color = new Color(76, 175, 80); break;
+                case "Preparado":     color = new Color(33, 150, 243); break;
+                case "Terminado":
+                case "Listo":         color = new Color(158, 158, 158); break;
+                case "Nuevo":         color = new Color(255, 152, 0); break;
+                default:              color = Color.LIGHT_GRAY; break;
+            }
+            return new GanttCell(executed, color);
+        }
     }
 
-    private void drawLegend(Graphics2D g2, int panelWidth, int panelHeight) {
-        int y = panelHeight - LEGEND_HEIGHT + 5;
-        int x = PADDING;
-        Font legendFont = new Font("SansSerif", Font.PLAIN, 10);
-        g2.setFont(legendFont);
-
-        drawLegendItem(g2, x, y, new Color(76, 175, 80), "Ejecucion"); x += 70;
-        drawLegendItem(g2, x, y, new Color(33, 150, 243), "Preparado"); x += 70;
-        drawLegendItem(g2, x, y, new Color(255, 152, 0), "Nuevo"); x += 70;
-        drawLegendItem(g2, x, y, new Color(158, 158, 158), "Terminado"); x += 70;
-    }
-
-    private void drawLegendItem(Graphics2D g2, int x, int y, Color color, String label) {
-        g2.setColor(color);
-        g2.fillRect(x, y, 10, 10);
-        g2.setColor(Color.DARK_GRAY);
-        g2.drawRect(x, y, 10, 10);
-        g2.setColor(Color.BLACK);
-        g2.drawString(label, x + 14, y + 10);
-    }
-
-    private String truncate(String s, int maxLen) {
-        if (s.length() <= maxLen) return s;
-        return s.substring(0, maxLen - 2) + "..";
-    }
-
-    private static class ProcesoBar {
-        final String nombre;
-        final int rafaga;
+    private static class RowData {
+        final String nucleo;
+        final String proceso;
+        final int ejecutados;
         final int duracion;
+        final int startTime;
         final String estado;
 
-        ProcesoBar(String nombre, int rafaga, int duracion, String estado) {
-            this.nombre = nombre;
-            this.rafaga = rafaga;
+        RowData(String nucleo, String proceso, int ejecutados, int duracion, int startTime, String estado) {
+            this.nucleo = nucleo;
+            this.proceso = proceso;
+            this.ejecutados = ejecutados;
             this.duracion = duracion;
+            this.startTime = startTime;
             this.estado = estado;
         }
     }

@@ -362,7 +362,7 @@ public class Planificador {
         BCP nuevo_BCP = memoria.obtener_Datos_BCP(pid);
         nuevo_BCP.setNombre_Programa(nombrePrograma);
         nuevo_BCP.set_momento_creacion(LocalTime.now());
-        System.out.println("Planificador: PASS 6");
+        controlador.guardarBCP(nuevo_BCP);
         this.agregar_Proceso_Nuevo(pid, nuevo_BCP);
         System.out.println("Planificador: PASS 7");
         this.eliminar_Programa_Pendiente(nombrePrograma);

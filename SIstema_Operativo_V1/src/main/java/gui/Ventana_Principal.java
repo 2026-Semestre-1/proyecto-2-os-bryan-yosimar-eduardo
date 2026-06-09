@@ -378,6 +378,7 @@ public class Ventana_Principal extends javax.swing.JFrame {
                 Seccion_Inferior_Tab.addTab("Paginacion", panelPaginacion);
                 Seccion_Inferior_Tab.addTab("Particiones", panelParticiones);
                 Seccion_Inferior_Tab.addTab("Archivos", jScrollPane11);
+                Seccion_Inferior_Tab.addTab("Terminal", new javax.swing.JScrollPane(terminal_Text_Area));
 
                 Tabla_Frames.getSelectionModel().addListSelectionListener(e -> {
                         if (!e.getValueIsAdjusting()) {
@@ -492,10 +493,6 @@ public class Ventana_Principal extends javax.swing.JFrame {
                 javax.swing.JPanel panelAlmacenamiento = new javax.swing.JPanel(new java.awt.BorderLayout());
                 panelAlmacenamiento.add(Almacenamiento_Label, java.awt.BorderLayout.NORTH);
                 panelAlmacenamiento.add(jScrollPane4, java.awt.BorderLayout.CENTER);
-
-                javax.swing.JPanel panelTerminal = new javax.swing.JPanel(new java.awt.BorderLayout());
-                panelTerminal.add(Terminal_Text_Area_Label, java.awt.BorderLayout.NORTH);
-                panelTerminal.add(jScrollPane5, java.awt.BorderLayout.CENTER);
 
                 monitorGrafico = new MonitorGrafico();
                 javax.swing.JScrollPane monitorScroll = new javax.swing.JScrollPane(monitorGrafico);
