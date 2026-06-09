@@ -376,7 +376,9 @@ public class NucleoSO {
         }
         Despachador.despachador(cpu, this.memoria, pPID);
         this.memoria.actualizar_Estado_BCP(pPID, "En Ejecucion");
+        this.memoria.modificar_CPU_Asignada(pPID, cpu.getNumero_CPU());
         cpu.setPID_Proceso_Actual(pPID);
+        sincronizar_Datos_Memoria_BCP_Planificador(pPID);
     }
 
     public boolean comprobar_Finalizacion_Proceso_CPU(CPU pCpu) {
@@ -599,10 +601,17 @@ public class NucleoSO {
             case "FCFS":
             case "SJF":
             case "HRRN":
-            case "Lottery":
-                // No preemptivos: solo cambiar cuando el proceso termina
-                // Ya manejado en finalizacion_Proceso_FCFS()
+            case "Lottery": {
+                for (CPU cpu : this.cpus) {
+                    if (cpu.getPID_Proceso_Actual() != 0)
+                        continue;
+                    int candidato = planificador.seleccionarSiguiente();
+                    if (candidato == -1)
+                        break;
+                    iniciar_Despachador(candidato);
+                }
                 break;
+            }
 
             default:
                 break;
