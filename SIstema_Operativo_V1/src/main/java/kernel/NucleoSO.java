@@ -564,6 +564,12 @@ public class NucleoSO {
             }
         }
 
+        // Aumentar el contador de quantum del que esta en la CPU.
+        // obtener alguno de los cpus.
+        if (!this.cpus.isEmpty()) {
+            CPU.incrementar_rafaga_actual();
+        }
+
         // 2. Fase de planificacion (según algoritmo)
         String nombreAlgoritmo = planificador.getNombreAlgoritmo();
 
@@ -586,49 +592,71 @@ public class NucleoSO {
                 break;
 
             case "RR": {
-                int candidato = planificador.seleccionarSiguiente();
-                if (candidato == -1)
-                    break;
-                boolean yaAsignado = false;
-                for (CPU cpu : this.cpus) {
-                    if (cpu.getPID_Proceso_Actual() == candidato) {
-                        yaAsignado = true;
-                        break;
-                    }
-                }
-                if (yaAsignado)
-                    break;
-                CPU cpuObjetivo = null;
-                int peorRafaga = -1;
-                for (CPU cpu : this.cpus) {
-                    int pid = cpu.getPID_Proceso_Actual();
-                    if (pid == 0) {
-                        cpuObjetivo = cpu;
-                        break;
-                    }
-                    BCP bcp = this.memoria.obtener_Datos_BCP(pid);
-                    if (bcp != null) {
-                        int r = 0;
-                        try {
-                            r = Integer.parseInt(bcp.getRafaga_Restante());
-                        } catch (NumberFormatException e) {
-                        }
-                        if (r > peorRafaga) {
-                            peorRafaga = r;
-                            cpuObjetivo = cpu;
-                        }
-                    }
-                }
-                if (cpuObjetivo != null && cpuObjetivo.getPID_Proceso_Actual() != candidato) {
-                    int actualPid = cpuObjetivo.getPID_Proceso_Actual();
-                    if (actualPid != 0) {
+                if (CPU.get_rafaga_actual() == this.planificador.getQuantum()) {
+                    CPU.reiniciar_rafaga();
+
+                    for (CPU cpu : this.cpus) {
+                        int actualPid = cpu.getPID_Proceso_Actual();
+                        int candidato = planificador.seleccionarSiguiente();
+                        // Se debe poner el estado del PID actual de este CPU en "Listo", para que se
+                        // puede calcular con ese tambien.
                         this.memoria.actualizar_Estado_BCP(actualPid, "Listo");
+                        sincronizar_Datos_Memoria_BCP_Planificador(actualPid);
+                        if (candidato != -1 && candidato != actualPid) {
+                            Despachador.despachador(cpu, memoria, candidato);
+                            memoria.actualizar_Estado_BCP(candidato, "En Ejecuccion");
+                            sincronizar_Datos_Memoria_BCP_Planificador(candidato);
+                        }
                     }
-                    Despachador.despachador(cpuObjetivo, memoria, candidato);
-                    this.memoria.actualizar_Estado_BCP(candidato, "En Ejecucion");
-                    cpuObjetivo.setPID_Proceso_Actual(candidato);
+                    // break;
+
                 }
                 break;
+
+                // int candidato = planificador.seleccionarSiguiente();
+                // if (candidato == -1)
+                // break;
+                // boolean yaAsignado = false;
+                // for (CPU cpu : this.cpus) {
+                // if (cpu.getPID_Proceso_Actual() == candidato) {
+                // yaAsignado = true;
+                // break;
+                // }
+                // }
+                // if (yaAsignado)
+                // break;
+                // CPU cpuObjetivo = null;
+                // int peorRafaga = -1;
+                // for (CPU cpu : this.cpus) {
+                // int pid = cpu.getPID_Proceso_Actual();
+                // if (pid == 0) {
+                // cpuObjetivo = cpu;
+                // break;
+                // }
+                // BCP bcp = this.memoria.obtener_Datos_BCP(pid);
+                // if (bcp != null) {
+                // int r = 0;
+                // try {
+                // r = Integer.parseInt(bcp.getRafaga_Restante());
+                // } catch (NumberFormatException e) {
+                // }
+                // if (r > peorRafaga) {
+                // peorRafaga = r;
+                // cpuObjetivo = cpu;
+                // }
+                // }
+                // }
+                // if (cpuObjetivo != null && cpuObjetivo.getPID_Proceso_Actual() != candidato)
+                // {
+                // int actualPid = cpuObjetivo.getPID_Proceso_Actual();
+                // if (actualPid != 0) {
+                // this.memoria.actualizar_Estado_BCP(actualPid, "Listo");
+                // }
+                // Despachador.despachador(cpuObjetivo, memoria, candidato);
+                // this.memoria.actualizar_Estado_BCP(candidato, "En Ejecucion");
+                // cpuObjetivo.setPID_Proceso_Actual(candidato);
+                // }
+                // break;
             }
 
             case "FCFS":

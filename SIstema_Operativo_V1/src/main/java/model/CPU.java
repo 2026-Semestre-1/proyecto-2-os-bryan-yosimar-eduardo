@@ -9,6 +9,8 @@ public class CPU {
 
     private int tiempo_CPU = 0;
 
+    private static int rafaga_actual = 0;
+
     private int numero_CPU;
     private int PC;
     private String IR;
@@ -57,6 +59,18 @@ public class CPU {
 
     public boolean isProcesoFinalizado() {
         return proceso_Finalizado;
+    }
+
+    public static void incrementar_rafaga_actual() {
+        rafaga_actual++;
+    }
+
+    public static void reiniciar_rafaga() {
+        rafaga_actual = 0;
+    }
+
+    public static int get_rafaga_actual() {
+        return rafaga_actual;
     }
 
     public void setPC(int nuevaPC) {

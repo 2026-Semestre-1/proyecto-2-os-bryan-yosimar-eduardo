@@ -96,6 +96,20 @@ public class Planificador {
         return this.quantum;
     }
 
+    public int obtenerUltimoPidCreado() {
+        if (this.cola_Procesos_Nuevos == null || this.cola_Procesos_Nuevos.isEmpty()) {
+            return -1; // no hay procesos
+        }
+
+        int ultimo_pid = -1;
+        for (Integer pid : this.cola_Procesos_Nuevos.keySet()) {
+            if (pid > ultimo_pid) {
+                ultimo_pid = pid;
+            }
+        }
+        return ultimo_pid;
+    }
+
     public Codigo_ASM obtener_Programa_Almacenamiento(Almacenamiento pMemoria_Secundaria, String pNombre_Programa) {
         System.out.println("Planificador: Obteniendo el programa: " + pNombre_Programa);
         Map<String, List<Integer>> indices_Programas = pMemoria_Secundaria.optener_Indices();
