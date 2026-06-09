@@ -664,7 +664,7 @@ public class NucleoSO {
                     int candidato = planificador.seleccionarSiguiente();
                     if (candidato == -1)
                         break;
-                    iniciar_Despachador(candidato);
+                    iniciar_Despachador(candidato, cpu);
                     BCP bcpPlan = planificador.getCola_Procesos_Nuevos().get(candidato);
                     if (bcpPlan != null) {
                         bcpPlan.setEstado("En Ejecucion");
