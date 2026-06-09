@@ -2,8 +2,8 @@
 # [NOMBRE DEL PROYECTO]
 ## Integrantes:
 ###   [2022233102] [Bryan Londoño Marchena]
-[2023152827] [Eduardo Rojas Gomez]
-[2023417365] [Yosimar Montenegro Montenegro]
+###   [2023152827] [Eduardo Rojas Gomez]
+###   [2023417365] [Yosimar Montenegro Montenegro]
 
 ### 3
 ### Enlace del video: pendiente
