@@ -1,6 +1,6 @@
 {
-    "memoria": 1024,
-    "almacenamiento": 1024,
-    "memoria_Virtual": 128,
-    "cant_CPU": 4
+    "memoria": 512,
+    "almacenamiento": 512,
+    "memoria_Virtual": 64,
+    "cant_CPU": 3
 }

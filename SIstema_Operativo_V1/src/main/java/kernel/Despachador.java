@@ -22,6 +22,8 @@ public class Despachador {
 
         // Asignar el el PID al cpu
         pCPU_Actual.setPID_Proceso_Actual(PID);
+
+        System.out.println("-> Despachador: Asignando CPU " + pCPU_Actual.getNumero_CPU() + " al proceso " + PID);
         pMemoria_Principal.actualizar_Estado_BCP(PID, "En Ejecucion");
 
         // Modificar le momento de inicio en la BCP.
