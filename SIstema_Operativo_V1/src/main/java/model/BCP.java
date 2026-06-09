@@ -24,8 +24,16 @@ public class BCP {
     private String Tiempo_Inicio;
     private String Tiempo_Finalizacion;
     private String Tiempo_Ejecucion;
+
+    // Nuevos datos.
+    private String rafaga_Restante;
+    private String tiempo_Espera;
+
     private String Proximo_Proceso;
     private int[] Pila;
+
+    // Datos que no tiene la BCP que se almacena en memoria.
+    // Todos los siguientes.
     private String nombre_Programa;
     private int espacio_Total_Programa;
     private LocalTime momento_creacion;
@@ -39,7 +47,8 @@ public class BCP {
     public BCP(int pPID, String pEstado, String pPrioridad, String pMem_Init, String pMem_End, String pPC, String pIR,
             String pAC, String pAX, String pBX, String pCX, String pDX, String pAH, String pAL, String pIO_STATUS,
             String pCPU_Asignada, String pTiempo_Llegada, String pTiempo_Inicio, String pTiempo_Finalizacion,
-            String pTiempo_Ejecucion, String pProximo_Proceso, int[] pPila) {
+            String pTiempo_Ejecucion, String pProximo_Proceso, int[] pPila, String pRafaga_Restante,
+            String pTiempo_Espera) {
         this.PID = pPID;
         this.Estado = pEstado;
         this.Prioridad = pPrioridad;
@@ -62,6 +71,8 @@ public class BCP {
         this.Tiempo_Ejecucion = pTiempo_Ejecucion;
         this.Proximo_Proceso = pProximo_Proceso;
         this.Pila = pPila;
+        this.rafaga_Restante = pRafaga_Restante;
+        this.tiempo_Espera = pTiempo_Espera;
     }
 
     public BCP(int pPID, String pPrioridad, String pCPU_Asignada, String pTiempo_Llegada, String pTiempo_Estimado,
@@ -244,6 +255,22 @@ public class BCP {
         Tiempo_Finalizacion = pTiempo_Finalizacion;
     }
 
+    public String getRafaga_Restante() {
+        return rafaga_Restante;
+    }
+
+    public void setRafaga_Restante(String rafaga_Restante) {
+        this.rafaga_Restante = rafaga_Restante;
+    }
+
+    public String getTiempo_Espera() {
+        return tiempo_Espera;
+    }
+
+    public void setTiempo_Espera(String tiempo_Espera) {
+        this.tiempo_Espera = tiempo_Espera;
+    }
+
     public String getProximo_Proceso() {
         return Proximo_Proceso;
     }
@@ -266,6 +293,10 @@ public class BCP {
 
     public int getTamanoProceso() {
         return espacio_Total_Programa;
+    }
+
+    public void setTamanoProceso(int pTamanoProceso) {
+        this.espacio_Total_Programa = pTamanoProceso;
     }
 
     public void setNombre_Programa(String nombre_Programa) {
@@ -296,14 +327,37 @@ public class BCP {
         return momento_finalizacion;
     }
 
-    public int getOverlayActual() { return overlayActual; }
-    public void setOverlayActual(int overlayActual) { this.overlayActual = overlayActual; }
-    public int getTotalOverlays() { return totalOverlays; }
-    public void setTotalOverlays(int totalOverlays) { this.totalOverlays = totalOverlays; }
-    public boolean isTieneOverlay() { return tieneOverlay; }
-    public void setTieneOverlay(boolean tieneOverlay) { this.tieneOverlay = tieneOverlay; }
-    public int getPosInicioOverlayMV() { return posInicioOverlayMV; }
-    public void setPosInicioOverlayMV(int v) { this.posInicioOverlayMV = v; }
+    public int getOverlayActual() {
+        return overlayActual;
+    }
+
+    public void setOverlayActual(int overlayActual) {
+        this.overlayActual = overlayActual;
+    }
+
+    public int getTotalOverlays() {
+        return totalOverlays;
+    }
+
+    public void setTotalOverlays(int totalOverlays) {
+        this.totalOverlays = totalOverlays;
+    }
+
+    public boolean isTieneOverlay() {
+        return tieneOverlay;
+    }
+
+    public void setTieneOverlay(boolean tieneOverlay) {
+        this.tieneOverlay = tieneOverlay;
+    }
+
+    public int getPosInicioOverlayMV() {
+        return posInicioOverlayMV;
+    }
+
+    public void setPosInicioOverlayMV(int v) {
+        this.posInicioOverlayMV = v;
+    }
 
     public void mostrar_datos_bcp() {
         System.out.println("-> PID: " + this.PID);

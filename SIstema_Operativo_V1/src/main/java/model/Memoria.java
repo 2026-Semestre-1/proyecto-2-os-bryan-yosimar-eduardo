@@ -15,7 +15,7 @@ public class Memoria {
     private int espacio_Usado_Usuario = 0;
     private int posicion_Actual_OS = 0;
     private int posicion_Actual_Usuario = 0;
-    private static final int TAMANO_BCP = 26;
+    private static final int TAMANO_BCP = 28;
 
     public Memoria(int pTamano_Memoria) {
         this.Memoria_Principal = new HashMap<>(pTamano_Memoria);
@@ -109,51 +109,138 @@ public class Memoria {
     }
 
     public int iniciar_Memoria_BCP(int pTamano_Proceso, int pPrioridad, int pProximo_Proceso, int pCPU_Asignada,
-            int pMomento_Llegada, int pDuracion_Estimada, int pos_Actual_MV, int pcInicial) {
-        int pid = asignar_Nuevo_PID_Proceso();
-        Memoria_Principal.put(posicion_Actual_OS, ((Integer) pid).toString());
-        Memoria_Principal.put(posicion_Actual_OS + 1, "NEW");
-        Memoria_Principal.put(posicion_Actual_OS + 2, ((Integer) pPrioridad).toString());
-        if (this.validar_Espacio_Disponible_Usuario(pTamano_Proceso) == 0) {
-            if (pcInicial == 0) {
-                Memoria_Principal.put(posicion_Actual_OS + 3, "0");
-                Memoria_Principal.put(posicion_Actual_OS + 4, String.valueOf(pTamano_Proceso - 1));
-            } else {
-                Memoria_Principal.put(posicion_Actual_OS + 3, String.valueOf(pcInicial));
-                Memoria_Principal.put(posicion_Actual_OS + 4,
-                        String.valueOf(pcInicial + pTamano_Proceso - 1));
+            int pMomento_Llegada, int pDuracion_Estimada, int pos_Actual_MV, int pcInicial, int pPID) {
+
+        // registrar los datos iniciales de un nuevo proceso en memoria, se crea la BCP
+        // que en la seccion del
+        // OS y se registran los datosinicales del proceso.
+
+        // Asumimos que ya validamos el espacio disponibles tanto en la secion del OS
+        // como en la del usuario
+        // para agregar una nueva BCP y cargar el programa.
+
+        int pid = pPID;// asignar_Nuevo_PID_Proceso(); // Obtener el nuevo PID para esta BCP.
+
+        boolean slotReusado = false;
+        for (int i = 0; i < espacio_OS; i += TAMANO_BCP) {
+            String val = Memoria_Principal.get(i);
+            if (val == null || val.equals("")) {
+                posicion_Actual_OS = i;
+                slotReusado = true;
+                break;
             }
-            Memoria_Principal.put(posicion_Actual_OS + 5, String.valueOf(pcInicial));
+        }
+
+        // System.out.println("Memoria: Asignando nuevo PID: " + pid);
+        // Registramos manualmente cada uno de las partes necesarias para la BCP.
+        // System.out.println("Memoria: Posicion actual del OS: " + posicion_Actual_OS);
+        // PID -> Identificador del proceso. #0
+        Memoria_Principal.put(posicion_Actual_OS, ((Integer) pid).toString());
+
+        // STATE -> Estado del proceso. #1
+        Memoria_Principal.put(posicion_Actual_OS + 1, "Preparado");
+
+        // PRIORITY -> Prioridad del proceso. #2
+        Memoria_Principal.put(posicion_Actual_OS + 2, ((Integer) pPrioridad).toString());
+
+        if (this.validar_Espacio_Disponible_Usuario(pTamano_Proceso) == 0) {
+            // Caso el que se asigna a la memoria principal.
+            // MEM_INIT -> Puntero de memoria. -> Inicio de donde estan las instrucciones de
+            // este proceso. #3
+            Memoria_Principal.put(posicion_Actual_OS + 3, ((Integer) posicion_Actual_Usuario).toString());
+
+            // MEM_END -> Fin de la memoria del proceso. #4
+            Memoria_Principal.put(posicion_Actual_OS + 4,
+                    ((Integer) (posicion_Actual_Usuario + pTamano_Proceso - 1)).toString());
+
+            // PC -> Contador de programa. #5 -> Apuntamos por defecto a la primera posicion
+            // del programa.
+            Memoria_Principal.put(posicion_Actual_OS + 5, ((Integer) posicion_Actual_Usuario).toString());
+
         } else {
+            // Caso en el que se va para la memoria virtual.
+
+            // MEM_INIT -> Puntero de memoria. -> Inicio de donde estan las instrucciones de
+            // este proceso. #3
             Memoria_Principal.put(posicion_Actual_OS + 3,
                     ((Integer) (this.getEspacio_Total() + pos_Actual_MV)).toString());
+
+            // MEM_END -> Fin de la memoria del proceso. #4
             Memoria_Principal.put(posicion_Actual_OS + 4,
                     ((Integer) (this.getEspacio_Total() + pos_Actual_MV + pTamano_Proceso - 1)).toString());
-            Memoria_Principal.put(posicion_Actual_OS + 5, String.valueOf(pcInicial));
-                    
+
+            // PC -> Contador de programa. #5 -> Apuntamos por defecto a la primera posicion
+            // del programa.
+            Memoria_Principal.put(posicion_Actual_OS + 5,
+                    ((Integer) (this.getEspacio_Total() + pos_Actual_MV)).toString());
         }
+
+        // IR -> Registro de instruccion. #6
         Memoria_Principal.put(posicion_Actual_OS + 6, "0000 0000 00000000");
+
+        // AC -> Acumulador. #7
         Memoria_Principal.put(posicion_Actual_OS + 7, "0");
+
+        // AX -> Registro de uso general A. #8
         Memoria_Principal.put(posicion_Actual_OS + 8, "0");
+
+        // BX -> Registro de uso general B. #9
         Memoria_Principal.put(posicion_Actual_OS + 9, "0");
+
+        // CX -> Registro de uso general C. #10
         Memoria_Principal.put(posicion_Actual_OS + 10, "0");
+
+        // DX -> Registro de uso general D. #11
         Memoria_Principal.put(posicion_Actual_OS + 11, "0");
+
+        // IO_STATUS -> Lista de los archivos abiertos: Se guardan en una sola posicion
+        // en memoria: Arhci1, Archi2, Archi3. #12
         Memoria_Principal.put(posicion_Actual_OS + 12, "NONE");
-        Memoria_Principal.put(posicion_Actual_OS + 13, "1");
+
+        // CPU asignada -> Se asigna la CPU a este proceso. #13
+        Memoria_Principal.put(posicion_Actual_OS + 13, ((Integer) pCPU_Asignada).toString());
+
+        // Momento en el que llega el proceso al planificador. #14
         Memoria_Principal.put(posicion_Actual_OS + 14, ((Integer) pMomento_Llegada).toString());
+
+        // Momento en el que inicia la ejecucion del proceso. #15
         Memoria_Principal.put(posicion_Actual_OS + 15, "-1");
+
+        // Momento en el que finaliza la ejecucion del proceso #16
         Memoria_Principal.put(posicion_Actual_OS + 16, "0");
+
+        // Tiempo esperado de ejecucion #17
+        // System.out.println("Duracion estimada: " + pDuracion_Estimada);
         Memoria_Principal.put(posicion_Actual_OS + 17, ((Integer) pDuracion_Estimada).toString());
+
+        // Enlace al siguiente BCP #18
         Memoria_Principal.put(posicion_Actual_OS + 18,
                 (pProximo_Proceso == -1) ? "NONE" : String.valueOf(pProximo_Proceso));
+
+        // Reservar 5 posiciones al final del BCP para poder simular la pila. #19-23
         for (int i = 0; i < 5; i++) {
             Memoria_Principal.put(posicion_Actual_OS + 19 + i, "");
         }
+
+        // Registro AH#24 y AL#25
         Memoria_Principal.put(posicion_Actual_OS + 24, "0");
         Memoria_Principal.put(posicion_Actual_OS + 25, "0");
-        this.posicion_Actual_OS += 26;
-        this.espacio_Usado_OS += 26;
-        System.out.println("[DEBUG BCP] PID=" + pid + " creado | pos_OS=" + (posicion_Actual_OS - 26)
+
+        // >> Agregar nuevos espacio necesarios.
+
+        // Rafaga de CPU restante. Lo que le queda al proceso por ejecutar.
+        Memoria_Principal.put(posicion_Actual_OS + 26, String.valueOf(pDuracion_Estimada));
+
+        // El tiempo que lleva en espera un proceso.
+        Memoria_Principal.put(posicion_Actual_OS + 27, "0");
+
+        // Actualizamos la posicion actual del OS y el espacio usado.
+        if (!slotReusado) {
+            this.posicion_Actual_OS += TAMANO_BCP;
+        }
+        this.espacio_Usado_OS += TAMANO_BCP;
+
+        System.out.println("[DEBUG BCP] PID=" + pid + " creado | pos_OS=" + (posicion_Actual_OS)
                 + " usado_OS=" + espacio_Usado_OS + " max_OS=" + espacio_OS
                 + " pos_User=" + posicion_Actual_Usuario + " usado_User=" + espacio_Usado_Usuario);
         return pid;
@@ -253,12 +340,116 @@ public class Memoria {
         return 0;
     }
 
+    /**
+     * Nombre: modificar_Tiempo_Espera_BCP
+     * 
+     * Descripcion: Modifica el tiempo de espera del BCP incrementandolo en 1.
+     * 
+     * @param pPID (int): PID del proceso.
+     * @return (int): 0 si el tiempo de espera se modifico correctamente, 1 si no se
+     *         encontro la BCP.
+     */
+    public int modificar_Tiempo_Espera_Procesos_Listos(Map<Integer, BCP> pLista_Procesos_Listos) {
+
+        if (pLista_Procesos_Listos == null) {
+            return -1;
+        }
+
+        for (BCP bcp : pLista_Procesos_Listos.values()) {
+            // Para saltarse los procesos que esten en ejecucion.
+            if (bcp.getEstado().equals("En Proceso") || bcp.getEstado().equals("En Ejecucion")) {
+                continue;
+            }
+
+            int posicion_BCP = buscar_Posicion_BCP(bcp.getPID());
+
+            if (posicion_BCP == -1) {
+                return -1;
+            }
+            // Obtener el tiempo de espera actual
+            int tiempo_Espera = Integer.parseInt(Memoria_Principal.get(posicion_BCP + 27));
+
+            // Incrementar el tiempo de espera
+            tiempo_Espera++;
+
+            // Actualizar el tiempo de espera
+            Memoria_Principal.put(posicion_BCP + 27, String.valueOf(tiempo_Espera));
+
+            // Actualizar el valor del BCP en la lista de procesos listos.
+            bcp.setTiempo_Espera(String.valueOf(tiempo_Espera));
+        }
+
+        return 0;
+    }
+
+    public int modificar_Tiempo_Espera_BCP(int pPID) {
+        int posicion_BCP = buscar_Posicion_BCP(pPID);
+        if (posicion_BCP == -1) {
+            return 1;
+        }
+        int tiempo_Espera = Integer.parseInt(Memoria_Principal.get(posicion_BCP + 27));
+        tiempo_Espera++;
+        Memoria_Principal.put(posicion_BCP + 27, String.valueOf(tiempo_Espera));
+        return 0;
+    }
+
+    /**
+     * Nombre: modificar_Tiempo_Restante_BCP
+     * 
+     * Descripcion: Modifica el tiempo restante del BCP decrementandolo en 1.
+     * 
+     * @param pPID (int): PID del proceso.
+     * @return (int): 0 si el tiempo restante se modifico correctamente, 1 si no se
+     *         encontro la BCP.
+     */
+    public int modificar_Tiempo_Restante_BCP(int pPID) {
+        int posicion_BCP = buscar_Posicion_BCP(pPID);
+        if (posicion_BCP == -1) {
+            return 1;
+        }
+
+        int tiempo_Restante = Integer.parseInt(Memoria_Principal.get(posicion_BCP + 26));
+        tiempo_Restante--;
+        Memoria_Principal.put(posicion_BCP + 26, String.valueOf(tiempo_Restante));
+        return 0;
+
+    }
+
+    /**
+     * Nombre: modificar_Enlace_Siguiente_BCP
+     * 
+     * Descripcion: Modifica el enlace siguiente del BCP.
+     * 
+     * @param pPID             (int): PID del proceso.
+     * @param pProximo_Proceso (int): Proximo proceso.
+     * @return (int): 0 si el enlace siguiente se modifico correctamente, 1 si no se
+     *         encontro la BCP.
+     */
     public int modificar_Enlace_Siguiente_BCP(int pPID, int pProximo_Proceso) {
         int posicion_BCP = buscar_Posicion_BCP(pPID);
         if (posicion_BCP == -1) {
             return 1;
         }
         Memoria_Principal.put(posicion_BCP + 18, String.valueOf(pProximo_Proceso));
+        return 0;
+    }
+
+    /**
+     * Nombre: modificar_CPU_Asignada
+     * 
+     * Descripcion: Modifica el CPU asignado al BCP.
+     * 
+     * @param pPID          (int): PID del proceso.
+     * @param pCPU_Asignada (int): CPU asignado.
+     * @return (int): 0 si el CPU asignado se modifico correctamente, 1 si no se
+     *         encontro la BCP.
+     */
+    public int modificar_CPU_Asignada(int pPID, int pCPU_Asignada) {
+        int posicion_BCP = buscar_Posicion_BCP(pPID);
+        if (posicion_BCP == -1) {
+            return 1;
+        }
+        Memoria_Principal.put(posicion_BCP + 13, String.valueOf(pCPU_Asignada));
         return 0;
     }
 
@@ -368,9 +559,12 @@ public class Memoria {
         }
         String ah = Memoria_Principal.get(posicion_BCP + 24);
         String al = Memoria_Principal.get(posicion_BCP + 25);
+        String rafaga_restante = Memoria_Principal.get(posicion_BCP + 26);
+        String tiempo_espera = Memoria_Principal.get(posicion_BCP + 27);
+
         return new BCP(pid, estado, prioridad, mem_init, mem_end, pc, ir, ac, ax, bx, cx, dx, ah, al, io_status,
                 cpu_asignada, tiempo_llegada, tiempo_inicio, tiempo_finalizacion, tiempo_ejecucion, proximo_proceso,
-                pila);
+                pila, rafaga_restante, tiempo_espera);
     }
 
     public BCP obtener_Datos_BCP_Pos_Inicio(int pPosicion_Inicial) {

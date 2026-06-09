@@ -17,7 +17,7 @@ import model.MemoriaPaginada;
 public class GestorMemoria {
 
     private static final int POSICION_INICIO_BCP = 0;
-    private static final int TAMANO_BCP = 26;
+    private static final int TAMANO_BCP = 28;
 
     private Memoria Memoria_RAM;
     private Almacenamiento Disco;
@@ -253,6 +253,9 @@ public class GestorMemoria {
             for (int i = pos_Inicial_Programa; i <= pos_Final_Programa; i++) {
                 this.Memoria_RAM.getMemoria_Principal().put(i, "");
             }
+            int tamanoLiberado = pos_Final_Programa - pos_Inicial_Programa + 1;
+            this.Memoria_RAM.setEspacio_Usado_Usuario(
+                this.Memoria_RAM.getEspacio_Usado_Usuario() - tamanoLiberado);
             this.liberar_Memoria_BCP(pos_BCP);
             return posciones;
         } else {
@@ -275,6 +278,7 @@ public class GestorMemoria {
         for (int i = posicion_BCP; i < posicion_BCP + TAMANO_BCP; i++) {
             Memoria_RAM.getMemoria_Principal().put(i, "");
         }
+        Memoria_RAM.setEspacio_Usado_OS(Memoria_RAM.getEspacio_Usado_OS() - TAMANO_BCP);
     }
 
     public int validar_Espacio_Disponible_Usuario(int tamano, String nombreProceso, Memoria memoria) {

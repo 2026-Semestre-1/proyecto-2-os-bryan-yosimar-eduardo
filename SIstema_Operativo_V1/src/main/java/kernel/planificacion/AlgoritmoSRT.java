@@ -1,7 +1,5 @@
 package kernel.planificacion;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 
 import kernel.GestorMemoria;
@@ -10,16 +8,14 @@ import model.Almacenamiento;
 import model.BCP;
 import model.Codigo_ASM;
 import model.Memoria;
-
 import util.Parser_String_To_Int;
 
-public class AlgoritmoHRRN implements IAlgoritmoPlanificacion {
+public class AlgoritmoSRT implements IAlgoritmoPlanificacion {
 
     @Override
-    public void cargarLote(Planificador ctx, Memoria memoria, Almacenamiento almacenamiento, GestorMemoria controlador,
-            int tiempoActualCPU) {
-
-        // Igual que SJF/SRT: cargar procesos mientras haya espacio (<5)
+    public void cargarLote(Planificador ctx, Memoria memoria, Almacenamiento almacenamiento,
+            GestorMemoria controlador, int tiempoActualCPU) {
+        // Igual que SJF: cargar procesos mientras haya espacio (<5)
         while (ctx.getCola_Procesos_Nuevos().size() < ctx.getMaxProcesosSimultaneos()) {
             if (ctx.getCola_Programas_Pendientes().isEmpty())
                 break;
@@ -34,41 +30,37 @@ public class AlgoritmoHRRN implements IAlgoritmoPlanificacion {
                 break;
             }
         }
-
     }
 
     @Override
     public int seleccionarSiguiente(Planificador ctx) {
-
         int mejorPID = -1;
-        double mejorRatio = -1.0;
-        long mejorLlegada = Long.MAX_VALUE;
+
+        int mejorTiempoRestante = Integer.MAX_VALUE;
+
+        int mejorTiempoLlegada = Integer.MAX_VALUE; // Esto es para el tema de desempate.
 
         for (Map.Entry<Integer, BCP> entry : ctx.getCola_Procesos_Nuevos().entrySet()) {
             BCP bcp = entry.getValue();
             String estado = bcp.getEstado();
-
-            // Saltarse los procesos que esten en ejecucion.
-            if (!"Preparado".equals(estado))
+            if (!"Preparado".equals(estado) && !"En Ejecuccion".equals(estado))
                 continue;
 
-            int servicio = Parser_String_To_Int.parseStringToInt(bcp.getTiempo_Ejecucion());
+            int restante = Parser_String_To_Int.parseStringToInt(bcp.getRafaga_Restante());
             int llegada = Parser_String_To_Int.parseStringToInt(bcp.getTiempo_Llegada());
-            int espera = Parser_String_To_Int.parseStringToInt(bcp.getTiempo_Espera());
 
-            double ratio = (double) (espera + servicio) / servicio;
-
-            if (ratio > mejorRatio || (ratio == mejorRatio && llegada < mejorLlegada)) {
-                mejorRatio = ratio;
-                mejorLlegada = llegada;
+            if (restante < mejorTiempoRestante || (restante == mejorTiempoRestante && llegada < mejorTiempoLlegada)) {
+                mejorTiempoRestante = restante;
+                mejorTiempoLlegada = llegada;
                 mejorPID = bcp.getPID();
             }
         }
         return mejorPID;
     }
 
+    @Override
     public String getNombre() {
-        return "HRRN";
+        return "SRT";
     }
 
 }
