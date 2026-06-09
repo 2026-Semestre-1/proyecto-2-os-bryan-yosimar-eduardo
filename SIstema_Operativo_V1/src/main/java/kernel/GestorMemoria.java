@@ -229,6 +229,9 @@ public class GestorMemoria {
             for (int i = pos_Inicial_Programa; i <= pos_Final_Programa; i++) {
                 this.Memoria_RAM.getMemoria_Principal().put(i, "");
             }
+            int tamanoLiberado = pos_Final_Programa - pos_Inicial_Programa + 1;
+            this.Memoria_RAM.setEspacio_Usado_Usuario(
+                this.Memoria_RAM.getEspacio_Usado_Usuario() - tamanoLiberado);
             this.liberar_Memoria_BCP(pos_BCP);
             return posciones;
         } else {
@@ -251,6 +254,7 @@ public class GestorMemoria {
         for (int i = posicion_BCP; i < posicion_BCP + TAMANO_BCP; i++) {
             Memoria_RAM.getMemoria_Principal().put(i, "");
         }
+        Memoria_RAM.setEspacio_Usado_OS(Memoria_RAM.getEspacio_Usado_OS() - TAMANO_BCP);
     }
 
     public int validar_Espacio_Disponible_Usuario(int tamano, String nombreProceso, Memoria memoria) {

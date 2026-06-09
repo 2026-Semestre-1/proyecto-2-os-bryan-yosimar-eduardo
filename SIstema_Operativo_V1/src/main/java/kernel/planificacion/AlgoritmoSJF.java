@@ -31,12 +31,14 @@ public class AlgoritmoSJF implements IAlgoritmoPlanificacion {
             // return Integer.compare(da, db);
             // });
             String nombre = ctx.getCola_Programas_Pendientes().get(0);
-            String nombrePrograma = nombre;// pendientes.get(0);
-            // Intentar crear proceso en memoria (Planificador maneja indices y BCP)
+            String nombrePrograma = nombre;
             Codigo_ASM codigo = ctx.obtener_Programa_Almacenamiento(almacenamiento, nombrePrograma);
-            boolean creado = ctx.crearProcesoEnMemoria(nombrePrograma, codigo, memoria, controlador, tiempoActualCPU);
+            ctx.getCola_Programas_Pendientes().remove(0);
+            String nombreInstancia = ctx.getSiguienteNombreInstancia(nombrePrograma);
+            boolean creado = ctx.crearProcesoEnMemoria(nombreInstancia, codigo, memoria, controlador, tiempoActualCPU);
             if (!creado) {
-                break; // no hay espacio, salir
+                ctx.getCola_Programas_Pendientes().add(0, nombrePrograma);
+                break;
             }
             // eliminar de pendientes lo hace crearProcesoEnMemoria o Planificador según
             // diseño

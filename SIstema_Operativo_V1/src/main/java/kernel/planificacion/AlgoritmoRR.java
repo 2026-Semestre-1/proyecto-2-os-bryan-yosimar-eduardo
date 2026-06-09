@@ -26,10 +26,13 @@ public class AlgoritmoRR implements IAlgoritmoPlanificacion {
             String nombrePrograma = ctx.getCola_Programas_Pendientes().get(0);
             Codigo_ASM codigo = ctx.obtener_Programa_Almacenamiento(almacenamiento, nombrePrograma);
 
-            boolean creado = ctx.crearProcesoEnMemoria(nombrePrograma, codigo,
+            ctx.getCola_Programas_Pendientes().remove(0);
+            String nombreInstancia = ctx.getSiguienteNombreInstancia(nombrePrograma);
+            boolean creado = ctx.crearProcesoEnMemoria(nombreInstancia, codigo,
                     memoria, controlador, tiempoActualCPU);
 
             if (!creado) {
+                ctx.getCola_Programas_Pendientes().add(0, nombrePrograma);
                 break;
             }
         }

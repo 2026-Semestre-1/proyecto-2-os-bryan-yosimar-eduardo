@@ -121,9 +121,18 @@ public class Memoria {
 
         int pid = pPID;// asignar_Nuevo_PID_Proceso(); // Obtener el nuevo PID para esta BCP.
 
+        boolean slotReusado = false;
+        for (int i = 0; i < espacio_OS; i += TAMANO_BCP) {
+            String val = Memoria_Principal.get(i);
+            if (val == null || val.equals("")) {
+                posicion_Actual_OS = i;
+                slotReusado = true;
+                break;
+            }
+        }
+
         // System.out.println("Memoria: Asignando nuevo PID: " + pid);
         // Registramos manualmente cada uno de las partes necesarias para la BCP.
-
         // System.out.println("Memoria: Posicion actual del OS: " + posicion_Actual_OS);
         // PID -> Identificador del proceso. #0
         Memoria_Principal.put(posicion_Actual_OS, ((Integer) pid).toString());
@@ -226,10 +235,12 @@ public class Memoria {
         Memoria_Principal.put(posicion_Actual_OS + 27, "0");
 
         // Actualizamos la posicion actual del OS y el espacio usado.
-        this.posicion_Actual_OS += TAMANO_BCP;
+        if (!slotReusado) {
+            this.posicion_Actual_OS += TAMANO_BCP;
+        }
         this.espacio_Usado_OS += TAMANO_BCP;
 
-        System.out.println("[DEBUG BCP] PID=" + pid + " creado | pos_OS=" + (posicion_Actual_OS - TAMANO_BCP)
+        System.out.println("[DEBUG BCP] PID=" + pid + " creado | pos_OS=" + (posicion_Actual_OS)
                 + " usado_OS=" + espacio_Usado_OS + " max_OS=" + espacio_OS
                 + " pos_User=" + posicion_Actual_Usuario + " usado_User=" + espacio_Usado_Usuario);
         return pid;
